@@ -1,0 +1,3 @@
+# ไม่ให้อัปโหลดโฟลเดอร์ node_modules และ save
+/node_modules
+/save
