@@ -3,3 +3,4 @@
 /save
 # ไม่ให้อัปโหลดไฟล์ .env
 .env
+.vercel

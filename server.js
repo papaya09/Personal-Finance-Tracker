@@ -3,23 +3,19 @@ require('dotenv').config(); // โหลด environment variables จาก .env
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
 const path = require('path');
-
-// Dependencies สำหรับ Passport และ Session
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const { MongoClient } = require('mongodb'); // Import MongoDB driver
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// ตั้งค่า dev mode จาก environment variable (กำหนดใน .env ด้วย DEVMODE=true หรือ false)
 const devmode = process.env.DEVMODE === 'true';
 
 // ตั้งค่า express-session โดยใช้ SESSION_SECRET จาก environment
 app.use(session({
-  secret: process.env.SESSION_SECRET, // ใช้ค่า secret จาก .env
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { secure: false } // สำหรับ HTTP ในการพัฒนา
@@ -29,7 +25,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// ตั้งค่า Passport Serialization/Deserialization พร้อม log
+// Passport Serialization/Deserialization
 passport.serializeUser((user, done) => {
   console.log('Serializing user:', user.id || user.displayName);
   done(null, user);
@@ -39,7 +35,7 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-// ตั้งค่า Google OAuth Strategy โดยใช้ environment variables สำหรับ Client ID/Secret
+// ตั้งค่า Google OAuth Strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,       
     clientSecret: process.env.GOOGLE_CLIENT_SECRET, 
@@ -52,59 +48,80 @@ passport.use(new GoogleStrategy({
   }
 ));
 
-// ใช้ middleware สำหรับ parse JSON
 app.use(bodyParser.json());
-
-// เซิร์ฟไฟล์ static จากโฟลเดอร์ public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ------------------------
-// API สำหรับ save/load (เหมือนเดิม)
-// ------------------------
-app.post('/save', (req, res) => {
-  const data = req.body;
-  const saveFolder = path.join(__dirname, 'save');
-  if (!fs.existsSync(saveFolder)) {
-    fs.mkdirSync(saveFolder, { recursive: true });
+// --- MongoDB Connection Caching --- //
+let cachedClient = null;
+async function getClient() {
+  if (cachedClient && cachedClient.isConnected && cachedClient.isConnected()) {
+    return cachedClient;
   }
-  const filePath = path.join(saveFolder, 'accounts.json');
-  fs.writeFile(filePath, JSON.stringify(data, null, 2), (err) => {
-    if (err) {
-      console.error('Error saving file:', err);
-      return res.status(500).json({ error: 'Failed to save data.' });
-    }
+  cachedClient = new MongoClient(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+  await cachedClient.connect();
+  return cachedClient;
+}
+
+// --- API Endpoints สำหรับ save/load โดยใช้ MongoDB --- //
+
+// Save Endpoint: บันทึกข้อมูล accounts ลงใน MongoDB
+app.post('/save', async (req, res) => {
+  // ตรวจสอบว่าผู้ใช้ได้ล็อกอิน (ถ้าไม่ได้อยู่ใน dev mode)
+  if (!devmode && !req.user) {
+    return res.status(401).json({ error: 'User not authenticated' });
+  }
+  // ใช้ Google ID จาก req.user หรือใช้ค่า fallback สำหรับ dev mode
+  const googleId = req.user ? req.user.id : 'devUser';
+  const accountsData = req.body.accounts;
+  try {
+    const client = await getClient();
+    const db = client.db("finance");
+    const collection = db.collection("accounts");
+    // อัปเดต (หรือแทรก) document ที่มี googleId ตรงกัน
+    const filter = { googleId: googleId };
+    const update = { $set: { accounts: accountsData, updatedAt: new Date() } };
+    const options = { upsert: true };
+    await collection.updateOne(filter, update, options);
+    console.log(`Data saved for user ${googleId}`);
     res.json({ message: 'Data saved successfully.' });
-  });
+  } catch (err) {
+    console.error("Error saving to DB:", err);
+    res.status(500).json({ error: 'Failed to save data.' });
+  }
 });
 
-app.get('/load', (req, res) => {
-  const filePath = path.join(__dirname, 'save', 'accounts.json');
-  if (fs.existsSync(filePath)) {
-    fs.readFile(filePath, 'utf8', (err, fileData) => {
-      if (err) {
-        console.error('Error reading file:', err);
-        return res.status(500).json({ error: 'Failed to load data.' });
-      }
-      try {
-        const data = JSON.parse(fileData);
-        res.json(data);
-      } catch (parseErr) {
-        console.error('Error parsing JSON:', parseErr);
-        res.status(500).json({ error: 'Invalid data format.' });
-      }
-    });
-  } else {
-    res.json({ accounts: [] });
+// Load Endpoint: โหลดข้อมูล accounts ของผู้ใช้จาก MongoDB
+app.get('/load', async (req, res) => {
+  if (!devmode && !req.user) {
+    return res.status(401).json({ error: 'User not authenticated' });
+  }
+  const googleId = req.user ? req.user.id : 'devUser';
+  try {
+    const client = await getClient();
+    const db = client.db("finance");
+    const collection = db.collection("accounts");
+    const doc = await collection.findOne({ googleId: googleId });
+    if (doc) {
+      res.json({ accounts: doc.accounts });
+    } else {
+      res.json({ accounts: [] });
+    }
+  } catch (err) {
+    console.error("Error loading from DB:", err);
+    res.status(500).json({ error: 'Failed to load data.' });
   }
 });
 
 // ------------------------
-// Routes สำหรับ Google OAuth
+// Routes สำหรับ Google OAuth และหน้าอื่นๆ
 // ------------------------
+
+// เริ่มต้นการ login ด้วย Google
 app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
+// Callback หลังจาก Google login
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/login' }),
   (req, res) => {
@@ -124,7 +141,6 @@ app.get('/logout', (req, res) => {
 // Middleware ตรวจสอบการเข้าสู่ระบบ
 function isLoggedIn(req, res, next) {
   console.log('isAuthenticated:', req.isAuthenticated());
-  // หากอยู่ใน dev mode ให้ผ่านการตรวจสอบได้เลย
   if (devmode || req.isAuthenticated()) {
     return next();
   }
@@ -139,7 +155,7 @@ app.get('/login', (req, res) => {
   `);
 });
 
-// Route หน้า home (ตรวจสอบว่าผู้ใช้ login แล้ว)
+// Route หน้า home (ตรวจสอบว่าผู้ใช้ได้ login แล้ว)
 app.get('/', isLoggedIn, (req, res) => {
   console.log('User is authenticated. Rendering home page.');
   console.log('req.user:', req.user);
@@ -154,7 +170,6 @@ app.get('/', isLoggedIn, (req, res) => {
 
 // Endpoint สำหรับตรวจสอบสถานะผู้ใช้
 app.get('/user', (req, res) => {
-  // หากอยู่ใน dev mode ให้ถือว่า login แล้ว
   if (devmode || req.isAuthenticated()) {
     res.json({ loggedIn: true, user: req.user || { displayName: 'Admin (dev)' } });
   } else {

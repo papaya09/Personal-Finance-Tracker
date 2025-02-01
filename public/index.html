@@ -8,6 +8,29 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Chart.js ผ่าน CDN (ใช้เวอร์ชันล่าสุด) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Loading spinner (tailwind override) */
+    .loader {
+      border-top-color: #3490dc;
+      animation: spinner 1s linear infinite;
+    }
+    @keyframes spinner {
+      to { transform: rotate(360deg); }
+    }
+    /* กำหนด zoom-out effect ในมือถือ */
+    @media (max-width: 639px) {
+  .zoom-out {
+    transform: scale(0.8);
+    transform-origin: top left;
+    width: 125%;
+   
+  }
+  .zoom-out table {
+    width: 100%;
+  }
+}
+
+  </style>
 </head>
 <body class="bg-gray-50 text-gray-900">
   <!-- Login Modal -->
@@ -78,9 +101,10 @@
       <button id="loadBtn" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">Load Data</button>
     </div>
 
-    <!-- ตารางแสดงบัญชี -->
-    <div class="overflow-x-auto">
-      <table class="min-w-full bg-white border border-gray-200">
+    <!-- ตารางแสดงบัญชี (คงรูปแบบ table เดิม) -->
+    <div class="overflow-x-auto zoom-out">
+        <table class="w-full min-w-full bg-white border border-gray-200">
+
         <thead>
           <tr class="bg-gray-100">
             <th class="py-2 px-4 border-b text-left">Account</th>
@@ -90,7 +114,7 @@
           </tr>
         </thead>
         <tbody id="accountsList">
-          <!-- รายการบัญชีจะถูก render ที่นี่ -->
+          <!-- รายการบัญชีจะถูก render ผ่าน JavaScript -->
         </tbody>
       </table>
     </div>
@@ -146,17 +170,6 @@
   <div id="loadingOverlay" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50 hidden">
     <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
   </div>
-
-  <style>
-    /* Loading spinner (tailwind override) */
-    .loader {
-      border-top-color: #3490dc;
-      animation: spinner 1s linear infinite;
-    }
-    @keyframes spinner {
-      to { transform: rotate(360deg); }
-    }
-  </style>
 
   <script>
     /*************** CONFIG & GLOBAL VARIABLES ***************/
@@ -256,7 +269,7 @@
         total.toLocaleString(undefined, { style: 'currency', currency: mainCurrency });
     }
 
-    // Render ตารางบัญชี
+    // Render ตารางบัญชี (คงรูปแบบ table ปกติ)
     function renderAccounts() {
       let list = accounts.slice();
       // Sort: เรียงจากค่ามากไปน้อย
