@@ -6,6 +6,7 @@
 
 ## โครงสร้างโปรเจค
 
+```
 my-portfolio/
 ├── node_modules/         // โฟลเดอร์สำหรับ dependencies (ไม่อัปโหลดใน Git)
 ├── public/
@@ -15,6 +16,8 @@ my-portfolio/
 ├── server.js             // โค้ดสำหรับเซิร์ฟเวอร์ Node.js (Express)
 ├── .env_example          // ตัวอย่างไฟล์ Environment Variables (คัดลอกไปเป็น .env แล้วตั้งค่าเอง)
 └── README.md             // ไฟล์นี้
+```
+
 
 ## การติดตั้ง
 
