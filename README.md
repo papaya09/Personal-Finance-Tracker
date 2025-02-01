@@ -1,20 +1,20 @@
 # Personal Finance Tracker
 
-โปรเจคนี้เป็นแอปพลิเคชันเว็บสำหรับจัดการบัญชีและยอดเงินในพอร์ตการลงทุน โดยสามารถเพิ่ม แก้ไข ลบบัญชี และคำนวณยอดรวมในสกุลเงิน THB และ USD อีกทั้งยังมีฟังก์ชันสำหรับบันทึกและโหลดข้อมูลผ่าน API ของเซิร์ฟเวอร์ Node.js (Express)
+โปรเจคนี้เป็นแอปพลิเคชันเว็บสำหรับจัดการบัญชีและยอดเงินในพอร์ตการลงทุน  
+คุณสามารถเพิ่ม แก้ไข และลบบัญชี รวมถึงคำนวณยอดรวมในสกุลเงิน THB (และแปลงจาก USD โดยอิงอัตราแลกเปลี่ยนเรียลไทม์)  
+ส่วน backend ใช้ Node.js (Express) และข้อมูลจะถูกจัดเก็บใน MongoDB
 
 ## โครงสร้างโปรเจค
 
-```
 my-portfolio/
 ├── node_modules/         // โฟลเดอร์สำหรับ dependencies (ไม่อัปโหลดใน Git)
 ├── public/
 │   └── index.html        // หน้าเว็บหลัก
-├── save/                 // โฟลเดอร์สำหรับเก็บไฟล์ JSON (ไม่อัปโหลดใน Git)
-├── .gitignore            // กำหนดไม่ให้ติดตาม node_modules และ save
+├── .gitignore            // กำหนดไม่ให้ติดตาม node_modules, .env, .vercel เป็นต้น
 ├── package.json          // รายละเอียดโปรเจคและ dependencies
 ├── server.js             // โค้ดสำหรับเซิร์ฟเวอร์ Node.js (Express)
+├── .env_example          // ตัวอย่างไฟล์ Environment Variables (คัดลอกไปเป็น .env แล้วตั้งค่าเอง)
 └── README.md             // ไฟล์นี้
-```
 
 ## การติดตั้ง
 
@@ -23,22 +23,40 @@ my-portfolio/
 
 2. **Clone โปรเจค:**
 
-   ```
+   ```bash
    git clone <repository-url>
    cd my-portfolio
    ```
 
 3. **ติดตั้ง Dependencies:**
 
-   ```
+   ```bash
    npm install
    ```
+
+4. **ตั้งค่า Environment Variables:**  
+   - คัดลอกไฟล์ `.env_example` ไปเป็น `.env`:
+     
+     ```bash
+     cp .env_example .env
+     ```
+     
+   - เปิดไฟล์ `.env` แล้วตั้งค่าตัวแปรต่าง ๆ ให้ตรงกับของคุณ:
+     
+     ```
+     PORT=3000
+     SESSION_SECRET=your_session_secret_here
+     GOOGLE_CLIENT_ID=your_google_client_id_here
+     GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+     DEVMODE=true         # ตั้งเป็น false ใน production
+     MONGO_URI=your_mongodb_connection_string_here
+     ```
 
 ## การรันโปรเจค
 
 1. **เริ่มเซิร์ฟเวอร์ Node.js:**
 
-   ```
+   ```bash
    node server.js
    ```
 
@@ -48,39 +66,52 @@ my-portfolio/
 ## ฟังก์ชันการทำงาน
 
 - **เพิ่ม/แก้ไข/ลบบัญชี:**  
-  ใช้ฟอร์มบนหน้าเว็บในการจัดการบัญชีและยอดเงิน
+  ใช้ฟอร์มบนหน้าเว็บเพื่อจัดการบัญชีและยอดเงิน
 
 - **คำนวณยอดรวม:**  
-  ระบบคำนวณยอดรวมในสกุลเงิน THB และ USD โดยอิงอัตราแลกเปลี่ยนเรียลไทม์
+  ระบบคำนวณยอดรวมในสกุลเงิน THB และแปลงจาก USD โดยใช้อัตราแลกเปลี่ยนเรียลไทม์
 
-- **บันทึกข้อมูล:**  
-  กดปุ่ม **Save Data** เพื่อส่งข้อมูลไปยังเซิร์ฟเวอร์และบันทึกลงไฟล์ในโฟลเดอร์ `save`
+- **บันทึกและโหลดข้อมูล:**  
+  เมื่อกดปุ่ม **Save Data** ข้อมูลจะถูกส่งไปยัง API ที่บันทึกข้อมูลใน MongoDB (ในฐานข้อมูล "finance" และ collection "accounts")  
+  ปุ่ม **Load Data** จะดึงข้อมูลจาก MongoDB ตามผู้ใช้ที่ล็อกอิน (โดยใช้ Google Authentication)  
+  (ในโหมดพัฒนา หากตั้งค่า `DEVMODE=true` ผู้ใช้สามารถใช้ admin credentials เพื่อทดสอบ)
 
-- **โหลดข้อมูล:**  
-  กดปุ่ม **Load Data** เพื่อดึงข้อมูลจากไฟล์ในโฟลเดอร์ `save` และอัปเดตตารางในหน้าเว็บ
+- **Google Authentication:**  
+  ผู้ใช้สามารถลงชื่อเข้าใช้ด้วยบัญชี Google  
+  (ในโหมดพัฒนา คุณสามารถล็อกอินด้วย admin/admin ได้หาก `DEVMODE=true`)
 
 ## การจัดการ Git
 
-ในไฟล์ **.gitignore** ได้กำหนดให้ไม่ติดตามโฟลเดอร์ `node_modules` และ `save` ดังนี้:
+ไฟล์และโฟลเดอร์ต่อไปนี้จะถูกละเว้น (ignored) ไม่ให้ commit ลงใน Git:
 
 ```
 /node_modules
-/save
+.env
+.vercel
 ```
 
-หากคุณเคย commit โฟลเดอร์เหล่านี้ไปแล้ว ให้ใช้คำสั่งต่อไปนี้เพื่อรีเฟรช Git Cache:
+หากคุณเคย commit ไฟล์หรือโฟลเดอร์เหล่านี้ไปแล้ว ให้ใช้คำสั่งต่อไปนี้เพื่อรีเฟรช Git cache:
 
-```
-git rm -r --cached node_modules
-git rm -r --cached save
+```bash
+git rm --cached -r node_modules
+git rm --cached .env
+git rm --cached -r .vercel
 git add .
-git commit -m "Refresh .gitignore to exclude node_modules and save folder"
+git commit -m "Refresh .gitignore to exclude node_modules, .env, and .vercel"
 git push
 ```
 
-## หมายเหตุ
+## หมายเหตุเพิ่มเติม
 
-- Frontend ใช้ HTML, CSS และ JavaScript โดยดึงข้อมูลอัตราแลกเปลี่ยนเรียลไทม์จาก API
-- Backend ใช้ Express สำหรับจัดการ API ในการบันทึกและโหลดข้อมูล
+- **Frontend:**  
+  ใช้ HTML, Tailwind CSS และ JavaScript โดยดึงอัตราแลกเปลี่ยนเรียลไทม์จาก API ภายนอก
 
-โปรเจคนี้เปิดให้พัฒนาและปรับปรุงเพิ่มเติมได้ตามความต้องการ
+- **Backend:**  
+  ใช้ Express ในการจัดการ API สำหรับบันทึกและโหลดข้อมูล และใช้ MongoDB เพื่อเก็บข้อมูลผู้ใช้และบัญชี  
+  (ข้อมูลจะถูกเก็บในฐานข้อมูล "finance" ใน collection "accounts")
+
+- **Deployment:**  
+  โปรเจคนี้สามารถ deploy ขึ้นแพลตฟอร์มอย่าง Vercel ได้  
+  อย่าลืมตั้งค่า Environment Variables บนแพลตฟอร์ม deployment ตามที่ได้ระบุในไฟล์ `.env_example`
+
+โปรเจคนี้เปิดให้พัฒนาและปรับปรุงเพิ่มเติมได้ตามความต้องการของคุณ!
