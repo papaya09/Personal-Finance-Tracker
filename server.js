@@ -7,25 +7,25 @@ const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const { MongoClient } = require('mongodb'); // Import MongoDB driver
+const { MongoClient } = require('mongodb');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const devmode = process.env.DEVMODE === 'true';
 
-// ตั้งค่า express-session โดยใช้ SESSION_SECRET จาก environment
+// ตั้งค่า express-session
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // สำหรับ HTTP ในการพัฒนา
+  cookie: { secure: false }
 }));
 
-// ตั้งค่า Passport middleware
+// ตั้งค่า Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport Serialization/Deserialization
 passport.serializeUser((user, done) => {
   console.log('Serializing user:', user.id || user.displayName);
   done(null, user);
@@ -51,10 +51,10 @@ passport.use(new GoogleStrategy({
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- MongoDB Connection Caching --- //
+// --- MongoDB Connection Caching ---
 let cachedClient = null;
 async function getClient() {
-  if (cachedClient && cachedClient.isConnected && cachedClient.isConnected()) {
+  if (cachedClient) {
     return cachedClient;
   }
   cachedClient = new MongoClient(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -62,22 +62,62 @@ async function getClient() {
   return cachedClient;
 }
 
-// --- API Endpoints สำหรับ save/load โดยใช้ MongoDB --- //
+// ------------------------
+// Caching FNG Data (อัปเดตเพียง 1 ครั้งต่อวัน)
+// ------------------------
 
-// Save Endpoint: บันทึกข้อมูล accounts ลงใน MongoDB
+// สำหรับ historical data
+let cachedFngHistorical = null;
+let lastFngHistoricalUpdateTime = null;
+async function updateFngHistoricalData() {
+  try {
+    const response = await axios.get(process.env.CMC_FNG_HISTORICAL_URL, {
+      headers: {
+        'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY,
+        'Accept': 'application/json'
+      },
+      params: { limit: 50 }
+    });
+    cachedFngHistorical = response.data;
+    lastFngHistoricalUpdateTime = new Date();
+    console.log("Updated FNG historical data at", lastFngHistoricalUpdateTime);
+  } catch (error) {
+    console.error("Error updating FNG historical data:", error);
+  }
+}
+
+// สำหรับ latest data
+let cachedFngLatest = null;
+let lastFngLatestUpdateTime = null;
+async function updateFngLatestData() {
+  try {
+    const response = await axios.get(process.env.CMC_FNG_LATEST_URL, {
+      headers: {
+        'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY,
+        'Accept': 'application/json'
+      }
+    });
+    cachedFngLatest = response.data;
+    lastFngLatestUpdateTime = new Date();
+    console.log("Updated FNG latest data at", lastFngLatestUpdateTime);
+  } catch (error) {
+    console.error("Error updating FNG latest data:", error);
+  }
+}
+
+// ------------------------
+// API Endpoints สำหรับ save/load โดยใช้ MongoDB
+// ------------------------
 app.post('/save', async (req, res) => {
-  // ตรวจสอบว่าผู้ใช้ได้ล็อกอิน (ถ้าไม่ได้อยู่ใน dev mode)
   if (!devmode && !req.user) {
     return res.status(401).json({ error: 'User not authenticated' });
   }
-  // ใช้ Google ID จาก req.user หรือใช้ค่า fallback สำหรับ dev mode
   const googleId = req.user ? req.user.id : 'devUser';
   const accountsData = req.body.accounts;
   try {
     const client = await getClient();
     const db = client.db("finance");
     const collection = db.collection("accounts");
-    // อัปเดต (หรือแทรก) document ที่มี googleId ตรงกัน
     const filter = { googleId: googleId };
     const update = { $set: { accounts: accountsData, updatedAt: new Date() } };
     const options = { upsert: true };
@@ -90,7 +130,6 @@ app.post('/save', async (req, res) => {
   }
 });
 
-// Load Endpoint: โหลดข้อมูล accounts ของผู้ใช้จาก MongoDB
 app.get('/load', async (req, res) => {
   if (!devmode && !req.user) {
     return res.status(401).json({ error: 'User not authenticated' });
@@ -115,13 +154,10 @@ app.get('/load', async (req, res) => {
 // ------------------------
 // Routes สำหรับ Google OAuth และหน้าอื่นๆ
 // ------------------------
-
-// เริ่มต้นการ login ด้วย Google
 app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
 
-// Callback หลังจาก Google login
 app.get('/auth/google/callback', 
   passport.authenticate('google', { failureRedirect: '/login' }),
   (req, res) => {
@@ -130,7 +166,6 @@ app.get('/auth/google/callback',
   }
 );
 
-// Route สำหรับ logout
 app.get('/logout', (req, res) => {
   req.logout(() => {
     console.log('User logged out.');
@@ -138,7 +173,6 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Middleware ตรวจสอบการเข้าสู่ระบบ
 function isLoggedIn(req, res, next) {
   console.log('isAuthenticated:', req.isAuthenticated());
   if (devmode || req.isAuthenticated()) {
@@ -147,7 +181,6 @@ function isLoggedIn(req, res, next) {
   res.redirect('/login');
 }
 
-// Route สำหรับหน้า login
 app.get('/login', (req, res) => {
   res.send(`
     <h1>Login</h1>
@@ -155,12 +188,11 @@ app.get('/login', (req, res) => {
   `);
 });
 
-// Route หน้า home (ตรวจสอบว่าผู้ใช้ได้ login แล้ว)
 app.get('/', isLoggedIn, (req, res) => {
   console.log('User is authenticated. Rendering home page.');
   console.log('req.user:', req.user);
   res.send(`
-    <h1>Welcome ${req.user ? req.user.displayName : 'Admin (dev)'}</h1>
+    <h1>Welcome ${req.user ? req.user.displayName : 'Admin (dev)'}!</h1>
     <p>Email: ${req.user && req.user.emails ? req.user.emails[0].value : 'N/A'}</p>
     <a href="/logout">Logout</a>
     <br/><br/>
@@ -168,12 +200,38 @@ app.get('/', isLoggedIn, (req, res) => {
   `);
 });
 
-// Endpoint สำหรับตรวจสอบสถานะผู้ใช้
 app.get('/user', (req, res) => {
   if (devmode || req.isAuthenticated()) {
     res.json({ loggedIn: true, user: req.user || { displayName: 'Admin (dev)' } });
   } else {
     res.json({ loggedIn: false });
+  }
+});
+
+// ------------------------
+// Endpoint สำหรับดึงข้อมูล FNG (รวม Latest และ Historical)
+// ใช้ข้อมูล cache ที่อัปเดตได้เพียงครั้งเดียวต่อวัน
+// ------------------------
+app.get('/fng', async (req, res) => {
+  try {
+    const now = new Date();
+    if (!lastFngHistoricalUpdateTime || (now - lastFngHistoricalUpdateTime) >= 86400000) {
+      await updateFngHistoricalData();
+    }
+    if (!lastFngLatestUpdateTime || (now - lastFngLatestUpdateTime) >= 86400000) {
+      await updateFngLatestData();
+    }
+    if (cachedFngLatest && cachedFngHistorical) {
+      res.json({
+        latest: cachedFngLatest,
+        historical: cachedFngHistorical
+      });
+    } else {
+      res.status(500).json({ error: 'No FNG data available.' });
+    }
+  } catch (error) {
+    console.error("Error in /fng endpoint:", error);
+    res.status(500).json({ error: 'Failed to retrieve FNG data.' });
   }
 });
 
