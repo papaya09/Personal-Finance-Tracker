@@ -99,15 +99,15 @@
       <div class="flex gap-2">
         <button id="exportBtn" class="px-3 py-2 bg-teal-500 text-white rounded hover:bg-teal-600">Export CSV</button>
         <label for="importInput" class="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 cursor-pointer">Import CSV</label>
-        <input type="file" id="importInput" accept=".csv" class="hidden" />
+        <input type="file" id="importInput" accept=".csv" class="hidden">
       </div>
     </div>
 
     <!-- Form สำหรับเพิ่มบัญชี -->
     <form id="accountForm" class="mb-6">
       <div class="flex flex-col sm:flex-row gap-4">
-        <input type="text" id="accountName" placeholder="Account name" required class="flex-1 px-4 py-2 border rounded" />
-        <input type="number" id="accountAmount" step="0.01" placeholder="Amount" required class="w-32 px-4 py-2 border rounded" />
+        <input type="text" id="accountName" placeholder="Account name" required class="flex-1 px-4 py-2 border rounded">
+        <input type="number" id="accountAmount" step="0.01" placeholder="Amount" required class="w-32 px-4 py-2 border rounded">
         <select id="accountCurrency" required class="w-28 px-4 py-2 border rounded">
           <option value="THB">THB</option>
           <option value="USD">USD</option>
@@ -134,7 +134,7 @@
           </tr>
         </thead>
         <tbody id="accountsList">
-          <!-- render ผ่าน JavaScript -->
+          <!-- รายการบัญชีจะถูก render ผ่าน JavaScript -->
         </tbody>
       </table>
     </div>
@@ -146,11 +146,9 @@
         <div class="flex justify-center">
           <div class="relative w-36 h-36">
             <svg class="w-full h-full" viewBox="0 0 100 100">
-              <!-- เส้นพื้นหลัง -->
-              <circle class="text-gray-300" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50" />
-              <!-- เส้น progress -->
+              <circle class="text-gray-300" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"></circle>
               <circle id="fngProgress" class="text-green-500" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"
-                stroke-dasharray="251.2" stroke-dashoffset="251.2" />
+                stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
               <span id="fngValue" class="text-2xl font-bold">--</span>
@@ -203,19 +201,21 @@
     <div class="bg-gray-100 p-4 rounded mt-6">
       <h3 class="text-xl font-semibold mb-2">Total Value:</h3>
       <p class="font-medium">
-        THB: <span id="totalMain">0.00</span><br/>
+        THB: <span id="totalMain">0.00</span><br>
         USD: <span id="totalUSD">0.00</span>
       </p>
       <p id="exchangeRateDisplay" class="text-sm text-gray-700 mt-1"></p>
     </div>
 
-    <!-- Chart Type Selector (รองรับเฉพาะ line chart) -->
-    <!-- <div class="mt-6 mb-2">
+    <!-- Chart Type Selector -->
+    <div class="mt-6 mb-2">
       <label for="chartTypeSelect" class="font-medium mr-2">Select Chart Type:</label>
       <select id="chartTypeSelect" class="px-3 py-2 border rounded">
-        <option value="line" selected>Line Chart</option>
+        <option value="bar" selected>Bar Chart</option>
+        <option value="line">Line Chart</option>
+        <option value="pie">Pie Chart</option>
       </select>
-    </div> -->
+    </div>
 
     <!-- Chart Section -->
     <div class="mt-6 h-72">
@@ -224,7 +224,7 @@
     </div>
 
     <!-- Activity Log -->
-    <br/>
+    <br>
     <div class="mt-6">
       <h3 class="text-xl font-semibold mb-2">Activity Log</h3>
       <ul id="activityLog" class="list-disc pl-5 text-sm text-gray-700 max-h-48 overflow-y-auto border p-3 rounded bg-white"></ul>
@@ -257,7 +257,7 @@
     </div>
   </div>
 
-  <!-- Toast container -->
+  <!-- Toast Container -->
   <div id="toast-container" class="fixed bottom-4 right-4 flex flex-col gap-2 z-50"></div>
 
   <!-- Loading Indicator -->
@@ -268,7 +268,7 @@
   <!-- ================== SCRIPT หลัก (Portfolio + ฟังก์ชัน) ================== -->
   <script>
     /*************** CONFIG & GLOBAL VARIABLES ***************/
-    const devmode = false;  
+    const devmode = false;
     let accounts = [];
     let editingId = null;
     const mainCurrency = "THB";
@@ -276,8 +276,7 @@
     let accountToDelete = null;
     let loggedIn = false;
     let chart;
-    // เปลี่ยน default chart type เป็น "line"
-    let currentChartType = "line"; 
+    let currentChartType = "line";
 
     /*************** UTILITY FUNCTIONS ***************/
     function logActivity(message) {
@@ -326,13 +325,11 @@
       }
     }
 
-    // ดึงข้อมูล FNG ทั้ง Latest และ Historical จาก server
     async function fetchFNG() {
       try {
         const res = await fetch('/fng');
         if (res.ok) {
           const data = await res.json();
-          // Process Latest data for Main Card
           if (data.latest && data.latest.data) {
             const latest = data.latest.data;
             document.getElementById('fngValue').textContent = latest.value;
@@ -341,10 +338,8 @@
             const offset = circumference * (1 - latest.value / 100);
             document.getElementById('fngProgress').style.strokeDashoffset = offset;
           }
-          // Process Historical data for Historical and Yearly Cards
           if (data.historical && data.historical.data && Array.isArray(data.historical.data)) {
             const historical = data.historical.data;
-            // Assumption: historical array is sorted descending by timestamp (latest first)
             const latestTimestamp = parseInt(historical[0].timestamp);
             const oneDay = 86400;
             const sevenDays = 7 * oneDay;
@@ -360,7 +355,6 @@
             document.getElementById('historicalYesterday').textContent = yesterdayRecord.value + " (" + yesterdayRecord.value_classification + ")";
             document.getElementById('historicalLastWeek').textContent = lastWeekRecord.value + " (" + lastWeekRecord.value_classification + ")";
             document.getElementById('historicalLastMonth').textContent = lastMonthRecord.value + " (" + lastMonthRecord.value_classification + ")";
-            // Calculate Yearly High and Low
             const yearlyHigh = historical.reduce((max, curr) => (curr.value > max.value ? curr : max), historical[0]);
             const yearlyLow = historical.reduce((min, curr) => (curr.value < min.value ? curr : min), historical[0]);
             function formatDate(timestamp) {
@@ -387,18 +381,16 @@
       if (stored) { accounts = JSON.parse(stored); }
     }
 
-    // แปลง amount (THB/USD) -> THB
     function convertToMain(amount, currency) {
       if (currency === mainCurrency) return parseFloat(amount);
       if (currency === "USD") {
         let rate = parseFloat(exchangeRates["USD"]);
         if (!rate || rate === 0) return 0;
-        return parseFloat(amount) / rate; 
+        return parseFloat(amount) / rate;
       }
-      return 0; 
+      return 0;
     }
 
-    // อัปเดต Total THB & USD
     function updateTotals() {
       let totalTHB = 0;
       accounts.forEach(acc => {
@@ -415,9 +407,8 @@
         totalUSD.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     }
 
-    // อัปเดตตารางและ Chart
     function renderAccounts() {
-      let list = [...accounts];
+      let list = accounts.slice();
       const sortType = document.getElementById('sortSelect').value;
       if (sortType === 'name') {
         list.sort((a, b) => a.name.localeCompare(b.name));
@@ -428,23 +419,22 @@
       }
       const tbody = document.getElementById('accountsList');
       tbody.innerHTML = list.map(account => {
-        const amountNum = parseFloat(account.amount);
         let convertedText = "";
         if (account.currency !== mainCurrency && exchangeRates[account.currency]) {
-          const converted = convertToMain(amountNum, account.currency);
+          const converted = convertToMain(account.amount, account.currency);
           convertedText = `<br/><span class="text-sm text-gray-600">≈ ${converted.toLocaleString(undefined, { style: 'currency', currency: mainCurrency })}</span>`;
         }
         return `
           <tr>
             <td class="py-2 px-4 border-b">${account.name}</td>
             <td class="py-2 px-4 border-b">
-              ${amountNum.toLocaleString()} ${account.currency}
+              ${parseFloat(account.amount).toLocaleString()} ${account.currency}
               ${convertedText}
             </td>
             <td class="py-2 px-4 border-b">${account.currency}</td>
             <td class="py-2 px-4 border-b">
-              <button onclick="editAccount('${account.id}')" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
-              <button onclick="confirmDelete('${account.id}')" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
+              <button type="button" onclick="editAccount('${account.id}')" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
+              <button type="button" onclick="confirmDelete('${account.id}')" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
             </td>
           </tr>
         `;
@@ -452,7 +442,6 @@
       updateChart();
     }
 
-    /*************** CHART (Data Labels + Tooltip) ***************/
     function getNumericValue(parsed) {
       if (typeof parsed === 'object' && parsed !== null) {
         return parsed.y !== undefined ? parsed.y : parsed.x || 0;
@@ -460,29 +449,23 @@
       return typeof parsed === 'number' ? parsed : 0;
     }
 
-    // Utility: Darken/lighten a hex color (used for border colors)
     function shadeColor(color, percent) {
       let R = parseInt(color.substring(1, 3), 16);
       let G = parseInt(color.substring(3, 5), 16);
       let B = parseInt(color.substring(5, 7), 16);
-
       R = parseInt((R * (100 + percent)) / 100);
       G = parseInt((G * (100 + percent)) / 100);
       B = parseInt((B * (100 + percent)) / 100);
-
       R = R < 255 ? R : 255;
       G = G < 255 ? G : 255;
       B = B < 255 ? B : 255;
-
       const RR = R.toString(16).padStart(2, "0");
       const GG = G.toString(16).padStart(2, "0");
       const BB = B.toString(16).padStart(2, "0");
-
       return "#" + RR + GG + BB;
     }
 
     function updateChart() {
-      // Aggregate data by account name
       const nameTotals = {};
       accounts.forEach((acc) => {
         const amtTHB = convertToMain(acc.amount, acc.currency);
@@ -490,9 +473,8 @@
         nameTotals[acc.name] += amtTHB;
       });
       const sortedEntries = Object.entries(nameTotals).sort((a, b) => b[1] - a[1]);
-      const labels = sortedEntries.map((e) => e[0]);
-      const data = sortedEntries.map((e) => e[1]);
-
+      const labels = sortedEntries.map(e => e[0]);
+      const data = sortedEntries.map(e => e[1]);
       const palette = [
         "#FF6384",
         "#36A2EB",
@@ -503,40 +485,25 @@
         "#66BB6A",
         "#42A5F5"
       ];
-
-      // กำหนด dataset configuration สำหรับ line chart
       let datasetConfig = {
         label: "Distribution (in THB)",
         data: data,
         backgroundColor: palette.slice(0, labels.length),
-        borderColor: palette.slice(0, labels.length).map((color) => shadeColor(color, -20)),
+        borderColor: palette.slice(0, labels.length).map(color => shadeColor(color, -20)),
         borderWidth: 2,
         tension: 0.3,
         pointBackgroundColor: palette.slice(0, labels.length),
         pointBorderColor: "#fff",
         pointRadius: 5,
         fill: true,
-        // เพิ่มความโปร่งแสงให้กับเส้นกราฟ (สีพื้นหลัง)
         backgroundColor: palette[0] + "33"
       };
-
       const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        layout: {
-          padding: 20
-        },
+        layout: { padding: 20 },
         plugins: {
-          legend: {
-            display: true,
-            position: "top",
-            labels: {
-              font: {
-                size: 14,
-                family: "Arial, sans-serif"
-              }
-            }
-          },
+          legend: { display: true, position: "top", labels: { font: { size: 14, family: "Arial, sans-serif" } } },
           tooltip: {
             callbacks: {
               label: function (context) {
@@ -547,9 +514,8 @@
               }
             }
           },
-          // กำหนด DataLabels สำหรับ line chart
           datalabels: {
-            display: (context) => {
+            display: context => {
               const value = context.dataset.data[context.dataIndex] || 0;
               return value > 0;
             },
@@ -568,55 +534,35 @@
           }
         },
         scales: {
-          x: {
-            grid: {
-              display: false
-            },
-            ticks: {
-              font: {
-                size: 12
-              }
-            }
-          },
-          y: {
-            grid: {
-              color: "#f0f0f0"
-            },
-            ticks: {
-              beginAtZero: true,
-              font: {
-                size: 12
-              }
-            }
-          }
+          x: { grid: { display: false }, ticks: { font: { size: 12 } } },
+          y: { grid: { color: "#f0f0f0" }, ticks: { beginAtZero: true, font: { size: 12 } } }
         }
       };
-
       if (chart) {
         chart.config.type = currentChartType;
         chart.data.labels = labels;
         chart.data.datasets[0] = datasetConfig;
         chart.options = commonOptions;
         chart.update();
-        return;
+      } else {
+        const ctx = document.getElementById("accountsChart").getContext("2d");
+        chart = new Chart(ctx, {
+          type: currentChartType,
+          data: { labels: labels, datasets: [datasetConfig] },
+          plugins: [ChartDataLabels],
+          options: commonOptions
+        });
       }
-      const ctx = document.getElementById("accountsChart").getContext("2d");
-      chart = new Chart(ctx, {
-        type: currentChartType,
-        data: {
-          labels: labels,
-          datasets: [datasetConfig]
-        },
-        plugins: [ChartDataLabels],
-        options: commonOptions
-      });
     }
 
     function setupChartTypeSelector() {
-      document.getElementById('chartTypeSelect').addEventListener('change', (e) => {
-        currentChartType = e.target.value;
-        updateChart();
-      });
+      const chartTypeSelect = document.getElementById('chartTypeSelect');
+      if (chartTypeSelect) {
+        chartTypeSelect.addEventListener('change', (e) => {
+          currentChartType = e.target.value;
+          updateChart();
+        });
+      }
     }
 
     /*************** AUTO LOAD & AUTO SAVE FUNCTIONS ***************/
@@ -630,7 +576,7 @@
           body: JSON.stringify({ accounts })
         });
         if (res.ok) {
-          logActivity('Auto-saved data to server');
+          logActivity('Data saved to server');
           showToast('Data auto-saved to server!', 'success');
         } else {
           showToast('Error auto-saving data.', 'error');
@@ -932,15 +878,17 @@
       "popup_height": "650"
     });
 
-    tvWidget.onChartReady(() => {
-      tvWidget.chart().onSymbolChanged().subscribe(null, (symbolData) => {
-        localStorage.setItem('tvSymbol', symbolData.name);
+    // ตรวจสอบว่า tvWidget.onChartReady มีอยู่หรือไม่ หากมีให้ subscribe เหตุการณ์
+    if (typeof tvWidget.onChartReady === "function") {
+      tvWidget.onChartReady(() => {
+        tvWidget.chart().onSymbolChanged().subscribe(null, (symbolData) => {
+          localStorage.setItem('tvSymbol', symbolData.name);
+        });
+        tvWidget.chart().onIntervalChanged().subscribe(null, (newInterval) => {
+          localStorage.setItem('tvInterval', newInterval);
+        });
       });
-      tvWidget.chart().onIntervalChanged().subscribe(null, (newInterval) => {
-        localStorage.setItem('tvInterval', newInterval);
-      });
-    });
+    }
   </script>
-
 </body>
 </html>
