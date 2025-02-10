@@ -14,6 +14,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const devmode = process.env.DEVMODE === 'true';
 
+let cachedListings = null;
+let lastListingsCall = 0; // timestamp ในหน่วยมิลลิวินาที
+
 // ตั้งค่า express-session
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -150,6 +153,42 @@ app.get('/load', async (req, res) => {
     res.status(500).json({ error: 'Failed to load data.' });
   }
 });
+
+// ------------------------
+// Endpoint สำหรับดึงข้อมูล Coin Listings จาก CoinMarketCap
+// ------------------------
+app.get('/cmc/listings', async (req, res) => {
+  try {
+    const oneHour = 3600000; // 1 ชั่วโมง = 3600000 มิลลิวินาที
+    const now = Date.now();
+    // ถ้ามี cache และเวลาที่ผ่านไปยังไม่เกิน 1 ชั่วโมง
+    if (cachedListings && (now - lastListingsCall < oneHour)) {
+      console.log("Returning cached coin listings.");
+      return res.json(cachedListings);
+    }
+    // ถ้าไม่มี cache หรือ cache หมดอายุ ให้เรียก API ใหม่
+    const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
+      params: {
+        start: 1,
+        limit: 100, // ปรับจำนวนรายการได้ตามต้องการ
+        convert: 'USD'
+      },
+      headers: {
+        'X-CMC_PRO_API_KEY': process.env.CMC_API_KEY,
+        'Accept': 'application/json'
+      }
+    });
+    // อัปเดต cache
+    cachedListings = response.data;
+    lastListingsCall = now;
+    console.log("Fetched new coin listings from CoinMarketCap.");
+    res.json(cachedListings);
+  } catch (error) {
+    console.error("Error fetching coin listings:", error);
+    res.status(500).json({ error: 'Failed to fetch coin listings' });
+  }
+});
+
 
 // ------------------------
 // Routes สำหรับ Google OAuth และหน้าอื่นๆ

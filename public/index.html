@@ -43,6 +43,23 @@
     .blue-text {
       color: #1E90FF;
     }
+    @media (min-width: 1024px) {
+      #coinSlider {
+        margin-top:20px;
+      }
+      /* ซ่อน scrollbar บน Chrome, Safari, Opera */
+      #coinSlider::-webkit-scrollbar {
+        display: none;
+      }
+      /* ซ่อน scrollbar บน Firefox */
+      #coinSlider {
+        scrollbar-width: none;
+      }
+      /* สำหรับ IE และ Edge */
+      #coinSlider {
+        -ms-overflow-style: none;
+      }
+    }
   </style>
 </head>
 
@@ -106,7 +123,6 @@
           <option value="THB">THB</option>
           <option value="USD">USD</option>
         </select>
-        <!-- Input สำหรับกำหนด Group (optional) -->
         <input type="text" id="accountGroup" placeholder="Group (optional)" class="w-48 px-4 py-2 border rounded">
         <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Add Account</button>
       </div>
@@ -134,6 +150,15 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Filter Controls สำหรับ Coin Slider -->
+    <div id="coinFilterControls" class="flex gap-4 items-center px-4 mt-4">
+      <button id="showAllBtn" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none">Show All</button>
+      <button id="showFavBtn" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none">Show Favorites</button>
+    </div>
+
+    <!-- Coin Slider -->
+    <div id="coinSlider" class="flex gap-6 overflow-x-auto px-4 snap-x snap-mandatory"></div>
 
     <!-- Card สำหรับแสดง Latest FNG (Main Card) -->
     <div id="fngCard" class="max-w-sm mx-auto bg-white shadow-lg rounded-lg overflow-hidden mt-4">
@@ -208,9 +233,9 @@
       <label for="chartTypeSelect" class="font-medium mr-2">Select Chart Type:</label>
       <select id="chartTypeSelect" class="px-3 py-2 border rounded">
         <option value="line" selected>Line Chart</option>
-        <option value="bar" >Bar Chart</option>
-      
-       
+        <option value="bar">Bar Chart</option>
+        
+        
       </select>
     </div>
 
@@ -241,7 +266,7 @@
     </div>
   </div>
   <!-- ================== /TRADINGVIEW OVERLAY ================== -->
-
+   
   <!-- Confirmation Modal สำหรับลบ -->
   <div id="confirmModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
     <div class="bg-white rounded shadow p-6 w-80">
@@ -262,7 +287,7 @@
     <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
   </div>
 
-  <!-- ================== SCRIPT หลัก (Portfolio + ฟังก์ชัน) ================== -->
+  <!-- ================== SCRIPT (Portfolio + ฟังก์ชัน) ================== -->
   <script>
     /*************** CONFIG & GLOBAL VARIABLES ***************/
     const devmode = false;
@@ -275,6 +300,22 @@
     let chart;
     let currentChartType = "line";
     let isLoadingData = false; // flag สำหรับป้องกันการเรียกซ้ำ
+
+    /*************** GLOBAL VARIABLES FOR FAVORITES ***************/
+    let favorites = JSON.parse(localStorage.getItem('favoriteCoins')) || [];
+    let coinFilterMode = localStorage.getItem('coinFilterMode') || 'all';
+    const filledStarIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.049 9.397c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/></svg>`;
+    const outlinedStarIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.049 9.397c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/></svg>`;
+
+    function toggleFavorite(symbol) {
+      if (favorites.includes(symbol)) {
+        favorites = favorites.filter(s => s !== symbol);
+      } else {
+        favorites.push(symbol);
+      }
+      localStorage.setItem('favoriteCoins', JSON.stringify(favorites));
+      loadCoinSlider();
+    }
 
     /*************** UTILITY FUNCTIONS ***************/
     function logActivity(message) {
@@ -405,7 +446,7 @@
         totalUSD.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     }
 
-    // ปรับปรุงฟังก์ชัน renderAccounts() ให้จัดกลุ่มบัญชีและแสดง header ของแต่ละกลุ่ม
+    // Render accounts into the table
     function renderAccounts() {
       let list = accounts.slice();
       const sortType = document.getElementById('sortSelect').value;
@@ -417,7 +458,6 @@
         list.sort((a, b) => a.currency.localeCompare(b.currency));
       }
       
-      // จัดกลุ่มข้อมูลตามค่า group (ถ้าไม่มีหรือเป็นค่าว่าง ให้ใช้ "Ungrouped")
       const groups = {};
       list.forEach(account => {
         const grp = account.group && account.group.trim() !== "" ? account.group : "Ungrouped";
@@ -427,7 +467,6 @@
       
       const tbody = document.getElementById('accountsList');
       let html = "";
-      // วนลูปแต่ละกลุ่มและแสดง header ของกลุ่ม จากนั้นแสดงรายการในกลุ่มนั้น
       for (const groupName in groups) {
         html += `<tr class="bg-gray-200"><td colspan="4" class="py-2 px-4 font-bold">${groupName}</td></tr>`;
         groups[groupName].forEach(account => {
@@ -602,10 +641,9 @@
       showLoading(false);
     }
 
-    // ฟังก์ชัน autoLoadDataFromServer ที่มีการ retry จนกว่าจะสำเร็จ
     async function autoLoadDataFromServer() {
       if (!devmode && !loggedIn) return;
-      if (isLoadingData) return; // ถ้าอยู่ระหว่างโหลดอยู่แล้วให้ไม่โหลดซ้ำ
+      if (isLoadingData) return;
       isLoadingData = true;
       showLoading(true);
       let success = false;
@@ -634,6 +672,60 @@
       isLoadingData = false;
     }
 
+    /*************** COIN SLIDER: โหลดข้อมูลจาก CoinMarketCap API ***************/
+    async function loadCoinSlider() {
+      try {
+        const res = await fetch('/cmc/listings');
+        if (!res.ok) {
+          throw new Error('Failed to fetch coin listings');
+        }
+        const data = await res.json();
+        let coins = data.data;
+        // ถ้า filter mode เป็น 'favorites' ให้กรองเฉพาะเหรียญที่อยู่ใน favorites
+        if (coinFilterMode === 'favorites') {
+          coins = coins.filter(coin => favorites.includes(coin.symbol));
+        }
+        let html = "";
+        coins.forEach(coin => {
+          const price = coin.quote.USD.price;
+          const percentChange = coin.quote.USD.percent_change_24h;
+          const arrowSvgDown = `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="inline-block" style="height: 16px; width: 16px;" viewBox="0 0 24 24"><path d="M18.0566 8H5.94336C5.10459 8 4.68455 9.02183 5.27763 9.61943L11.3343 15.7222C11.7019 16.0926 12.2981 16.0926 12.6657 15.7222L18.7223 9.61943C19.3155 9.02183 18.8954 8 18.0566 8Z"></path></svg>`;
+          const arrowSvgUp = `<svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="inline-block" style="height: 16px; width: 16px;" viewBox="0 0 24 24"><path d="M5.94336 16H18.0566C18.8954 16 19.3155 14.9782 18.7223 14.3806L12.6657 8.27783C12.2981 7.90739 11.7019 7.90739 11.3343 8.27783L5.27763 14.3806C4.68455 14.9782 5.10459 16 5.94336 16Z"></path></svg>`;
+          const changeIcon = percentChange < 0 ? arrowSvgDown : arrowSvgUp;
+          const changeColor = percentChange < 0 ? 'red' : 'green';
+          const priceFormatted = `$${price.toFixed(2)}`;
+          const percentFormatted = `${Math.abs(percentChange).toFixed(2)}%`;
+          
+          // ตรวจสอบว่าเหรียญนี้เป็น favorite หรือไม่
+          const isFav = favorites.includes(coin.symbol);
+          const starIcon = isFav ? filledStarIcon : outlinedStarIcon;
+          
+          html += `
+          <div class="w-48 bg-white rounded-xl shadow-lg p-4 relative flex-shrink-0 transform transition duration-300 hover:scale-105 snap-start">
+            <button class="absolute top-2 right-2 focus:outline-none" onclick="toggleFavorite('${coin.symbol}')">
+              ${starIcon}
+            </button>
+            <a target="_blank" href="/currencies/${coin.slug}/" class="block">
+              <img class="w-16 h-16 mx-auto mb-2 rounded-full border border-gray-200" src="https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png" alt="${coin.name} Logo" loading="lazy">
+              <div class="text-center">
+                <span class="block font-bold text-lg text-gray-800">${coin.name}</span>
+                <span class="block text-sm text-gray-500">${coin.symbol}</span>
+                <span class="block text-sm text-gray-500">${priceFormatted}</span>
+                <span class="block text-sm font-medium" style="color: ${changeColor};">
+                  ${changeIcon} ${percentFormatted}
+                </span>
+              </div>
+              <img class="w-full mt-3" src="https://s3.coinmarketcap.com/generated/sparklines/web/1d/2781/${coin.id}.svg" alt="${coin.name} Price Graph">
+            </a>
+          </div>
+          `;
+        });
+        document.getElementById('coinSlider').innerHTML = html;
+      } catch (error) {
+        console.error("Error loading coin slider:", error);
+      }
+    }
+
     /*************** FORM SUBMIT (Add/Edit Account) ***************/
     document.addEventListener('DOMContentLoaded', () => {
       setupChartTypeSelector();
@@ -641,6 +733,18 @@
         const adminLoginFields = document.getElementById('adminLoginFields');
         if (adminLoginFields) { adminLoginFields.classList.add('hidden'); }
       }
+      // ตั้งค่า event listener สำหรับ filter control buttons
+      document.getElementById('showAllBtn').addEventListener('click', () => {
+        coinFilterMode = 'all';
+        localStorage.setItem('coinFilterMode', coinFilterMode);
+        loadCoinSlider();
+      });
+      document.getElementById('showFavBtn').addEventListener('click', () => {
+        coinFilterMode = 'favorites';
+        localStorage.setItem('coinFilterMode', coinFilterMode);
+        loadCoinSlider();
+      });
+      
       document.getElementById('accountForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const account = {
@@ -648,7 +752,6 @@
           name: document.getElementById('accountName').value,
           amount: document.getElementById('accountAmount').value,
           currency: document.getElementById('accountCurrency').value,
-          // อ่านค่า group จาก input (ถ้าว่างจะตั้งเป็น "Ungrouped")
           group: document.getElementById('accountGroup').value.trim() || "Ungrouped"
         };
         if (editingId) {
@@ -670,7 +773,6 @@
       });
     });
 
-    // ฟังก์ชันแก้ไขบัญชี (เมื่อกด Edit ให้โหลดข้อมูล group เข้ามาด้วย)
     function editAccount(id) {
       const acc = accounts.find(a => a.id === id);
       document.getElementById('accountName').value = acc.name;
@@ -702,7 +804,6 @@
       document.getElementById('confirmModal').classList.add('hidden');
     });
 
-    /*************** SAVE/LOAD (Manual Buttons) ***************/
     document.getElementById('saveBtn').addEventListener('click', async () => {
       showLoading(true);
       try {
@@ -728,7 +829,6 @@
       await autoLoadDataFromServer();
     });
 
-    /*************** EXPORT/IMPORT CSV ***************/
     document.getElementById('exportBtn').addEventListener('click', () => {
       let csvContent = "data:text/csv;charset=utf-8,Name,Amount,Currency,Group\n";
       accounts.forEach(acc => {
@@ -754,7 +854,6 @@
         const lines = text.split('\n').slice(1);
         lines.forEach(line => {
           if (line.trim()) {
-            // สนับสนุนทั้งไฟล์ที่มี 3 หรือ 4 คอลัมน์
             const parts = line.split(',');
             const [name, amount, currency, group] = parts;
             const newAcc = {
@@ -778,10 +877,8 @@
       reader.readAsText(file);
     });
 
-    /*************** SORT CONTROL ***************/
     document.getElementById('sortSelect').addEventListener('change', renderAccounts);
 
-    /*************** LOGIN FUNCTIONALITY ***************/
     if (devmode) {
       document.getElementById('loginForm').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -818,7 +915,6 @@
       }
     }
 
-    /*************** SWITCH TAB: Portfolio/TradingView ***************/
     const btnPortfolio = document.getElementById('btnPortfolio');
     const btnTradingView = document.getElementById('btnTradingView');
     const appContainer = document.getElementById('appContainer');
@@ -833,7 +929,6 @@
       tradingviewOverlay.classList.remove('hidden');
     });
 
-    /*************** เมื่อหน้าโหลดเสร็จ ***************/
     window.addEventListener('load', async () => {
       await checkLoginStatus();
       await fetchExchangeRates();
@@ -841,6 +936,8 @@
       loadAccountsLocal();
       renderAccounts();
       updateTotals();
+      // โหลด coin slider หลังจากโหลดหน้า
+      loadCoinSlider();
     });
 
     document.addEventListener('visibilitychange', async () => {
