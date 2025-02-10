@@ -52,12 +52,6 @@
     <div class="bg-white rounded shadow p-6 w-80 md:w-96">
       <h2 class="text-xl font-bold mb-4 text-center">Login</h2>
       <form id="loginForm" class="space-y-4">
-        <!-- ฟอร์มล็อกอิน admin (ซ่อนถ้าไม่ใช่ dev mode) -->
-        <!-- <div id="adminLoginFields">
-          <input type="text" id="username" placeholder="Username" required class="w-full px-3 py-2 border rounded" />
-          <input type="password" id="password" placeholder="Password" required class="w-full px-3 py-2 border rounded" />
-          <button type="submit" class="w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Login</button>
-        </div> -->
         <!-- ปุ่ม Login with Google -->
         <a href="/auth/google" class="w-full px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 block text-center mt-4">
           Login with Google
@@ -103,7 +97,7 @@
       </div>
     </div>
 
-    <!-- Form สำหรับเพิ่มบัญชี -->
+    <!-- Form สำหรับเพิ่มบัญชี (เพิ่ม input สำหรับ Group) -->
     <form id="accountForm" class="mb-6">
       <div class="flex flex-col sm:flex-row gap-4">
         <input type="text" id="accountName" placeholder="Account name" required class="flex-1 px-4 py-2 border rounded">
@@ -112,6 +106,8 @@
           <option value="THB">THB</option>
           <option value="USD">USD</option>
         </select>
+        <!-- Input สำหรับกำหนด Group (optional) -->
+        <input type="text" id="accountGroup" placeholder="Group (optional)" class="w-48 px-4 py-2 border rounded">
         <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Add Account</button>
       </div>
     </form>
@@ -407,6 +403,7 @@
         totalUSD.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     }
 
+    // ปรับปรุงฟังก์ชัน renderAccounts() ให้จัดกลุ่มบัญชีและแสดง header ของแต่ละกลุ่ม
     function renderAccounts() {
       let list = accounts.slice();
       const sortType = document.getElementById('sortSelect').value;
@@ -417,28 +414,43 @@
       } else if (sortType === 'currency') {
         list.sort((a, b) => a.currency.localeCompare(b.currency));
       }
+      
+      // จัดกลุ่มข้อมูลตามค่า group (ถ้าไม่มีหรือเป็นค่าว่าง ให้ใช้ "Ungrouped")
+      const groups = {};
+      list.forEach(account => {
+        const grp = account.group && account.group.trim() !== "" ? account.group : "Ungrouped";
+        if (!groups[grp]) groups[grp] = [];
+        groups[grp].push(account);
+      });
+      
       const tbody = document.getElementById('accountsList');
-      tbody.innerHTML = list.map(account => {
-        let convertedText = "";
-        if (account.currency !== mainCurrency && exchangeRates[account.currency]) {
-          const converted = convertToMain(account.amount, account.currency);
-          convertedText = `<br/><span class="text-sm text-gray-600">≈ ${converted.toLocaleString(undefined, { style: 'currency', currency: mainCurrency })}</span>`;
-        }
-        return `
-          <tr>
-            <td class="py-2 px-4 border-b">${account.name}</td>
-            <td class="py-2 px-4 border-b">
-              ${parseFloat(account.amount).toLocaleString()} ${account.currency}
-              ${convertedText}
-            </td>
-            <td class="py-2 px-4 border-b">${account.currency}</td>
-            <td class="py-2 px-4 border-b">
-              <button type="button" onclick="editAccount('${account.id}')" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
-              <button type="button" onclick="confirmDelete('${account.id}')" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+      let html = "";
+      // วนลูปแต่ละกลุ่มและแสดง header ของกลุ่ม จากนั้นแสดงรายการในกลุ่มนั้น
+      for (const groupName in groups) {
+        html += `<tr class="bg-gray-200"><td colspan="4" class="py-2 px-4 font-bold">${groupName}</td></tr>`;
+        groups[groupName].forEach(account => {
+          let convertedText = "";
+          if (account.currency !== mainCurrency && exchangeRates[account.currency]) {
+            const converted = convertToMain(account.amount, account.currency);
+            convertedText = `<br/><span class="text-sm text-gray-600">≈ ${converted.toLocaleString(undefined, { style: 'currency', currency: mainCurrency })}</span>`;
+          }
+          html += `
+            <tr>
+              <td class="py-2 px-4 border-b">${account.name}</td>
+              <td class="py-2 px-4 border-b">
+                ${parseFloat(account.amount).toLocaleString()} ${account.currency}
+                ${convertedText}
+              </td>
+              <td class="py-2 px-4 border-b">${account.currency}</td>
+              <td class="py-2 px-4 border-b">
+                <button type="button" onclick="editAccount('${account.id}')" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
+                <button type="button" onclick="confirmDelete('${account.id}')" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+      tbody.innerHTML = html;
       updateChart();
     }
 
@@ -625,7 +637,9 @@
           id: editingId || Date.now().toString(),
           name: document.getElementById('accountName').value,
           amount: document.getElementById('accountAmount').value,
-          currency: document.getElementById('accountCurrency').value
+          currency: document.getElementById('accountCurrency').value,
+          // อ่านค่า group จาก input (ถ้าว่างจะตั้งเป็น "Ungrouped")
+          group: document.getElementById('accountGroup').value.trim() || "Ungrouped"
         };
         if (editingId) {
           const idx = accounts.findIndex(a => a.id === editingId);
@@ -646,11 +660,13 @@
       });
     });
 
+    // ฟังก์ชันแก้ไขบัญชี (เมื่อกด Edit ให้โหลดข้อมูล group เข้ามาด้วย)
     function editAccount(id) {
       const acc = accounts.find(a => a.id === id);
       document.getElementById('accountName').value = acc.name;
       document.getElementById('accountAmount').value = acc.amount;
       document.getElementById('accountCurrency').value = acc.currency;
+      document.getElementById('accountGroup').value = acc.group || "";
       editingId = id;
     }
 
@@ -723,9 +739,9 @@
 
     /*************** EXPORT/IMPORT CSV ***************/
     document.getElementById('exportBtn').addEventListener('click', () => {
-      let csvContent = "data:text/csv;charset=utf-8,Name,Amount,Currency\n";
+      let csvContent = "data:text/csv;charset=utf-8,Name,Amount,Currency,Group\n";
       accounts.forEach(acc => {
-        csvContent += `${acc.name},${acc.amount},${acc.currency}\n`;
+        csvContent += `${acc.name},${acc.amount},${acc.currency},${acc.group || ""}\n`;
       });
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
@@ -747,12 +763,15 @@
         const lines = text.split('\n').slice(1);
         lines.forEach(line => {
           if (line.trim()) {
-            const [name, amount, currency] = line.split(',');
+            // สนับสนุนทั้งไฟล์ที่มี 3 หรือ 4 คอลัมน์
+            const parts = line.split(',');
+            const [name, amount, currency, group] = parts;
             const newAcc = {
               id: Date.now().toString() + Math.random().toString().slice(2),
               name: (name || '').trim(),
               amount: (amount || '').trim(),
-              currency: (currency || '').trim()
+              currency: (currency || '').trim(),
+              group: (group || '').trim() || "Ungrouped"
             };
             if(newAcc.name) { 
               accounts.push(newAcc);
@@ -878,7 +897,6 @@
       "popup_height": "650"
     });
 
-    // ตรวจสอบว่า tvWidget.onChartReady มีอยู่หรือไม่ หากมีให้ subscribe เหตุการณ์
     if (typeof tvWidget.onChartReady === "function") {
       tvWidget.onChartReady(() => {
         tvWidget.chart().onSymbolChanged().subscribe(null, (symbolData) => {

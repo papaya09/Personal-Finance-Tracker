@@ -210,7 +210,6 @@ app.get('/user', (req, res) => {
 
 // ------------------------
 // Endpoint สำหรับดึงข้อมูล FNG (รวม Latest และ Historical)
-// ใช้ข้อมูล cache ที่อัปเดตได้เพียงครั้งเดียวต่อวัน
 // ------------------------
 app.get('/fng', async (req, res) => {
   try {
