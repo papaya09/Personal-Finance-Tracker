@@ -207,9 +207,10 @@
     <div class="mt-6 mb-2">
       <label for="chartTypeSelect" class="font-medium mr-2">Select Chart Type:</label>
       <select id="chartTypeSelect" class="px-3 py-2 border rounded">
-        <option value="bar" selected>Bar Chart</option>
-        <option value="line">Line Chart</option>
-        <option value="pie">Pie Chart</option>
+        <option value="line" selected>Line Chart</option>
+        <option value="bar" >Bar Chart</option>
+      
+       
       </select>
     </div>
 
@@ -273,6 +274,7 @@
     let loggedIn = false;
     let chart;
     let currentChartType = "line";
+    let isLoadingData = false; // flag สำหรับป้องกันการเรียกซ้ำ
 
     /*************** UTILITY FUNCTIONS ***************/
     function logActivity(message) {
@@ -600,12 +602,19 @@
       showLoading(false);
     }
 
+    // ฟังก์ชัน autoLoadDataFromServer ที่มีการ retry จนกว่าจะสำเร็จ
     async function autoLoadDataFromServer() {
       if (!devmode && !loggedIn) return;
+      if (isLoadingData) return; // ถ้าอยู่ระหว่างโหลดอยู่แล้วให้ไม่โหลดซ้ำ
+      isLoadingData = true;
       showLoading(true);
-      try {
-        const res = await fetch('/load');
-        if (res.ok) {
+      let success = false;
+      while (!success) {
+        try {
+          const res = await fetch('/load');
+          if (!res.ok) {
+            throw new Error("Server load failed with status " + res.status);
+          }
           const data = await res.json();
           accounts = data.accounts || [];
           saveAccountsLocal();
@@ -614,14 +623,15 @@
           updateTotals();
           logActivity('Data auto-loaded from server');
           showToast('Data loaded successfully from server!', 'success');
-        } else {
-          showToast('Error loading data.', 'error');
+          success = true;
+        } catch (error) {
+          console.error('Auto-load error, retrying in 2 seconds:', error);
+          showToast('Error loading data, retrying...', 'error');
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
-      } catch (error) {
-        console.error('Auto-load error:', error);
-        showToast('Error loading data.', 'error');
       }
       showLoading(false);
+      isLoadingData = false;
     }
 
     /*************** FORM SUBMIT (Add/Edit Account) ***************/
@@ -715,26 +725,7 @@
     });
 
     document.getElementById('loadBtn').addEventListener('click', async () => {
-      showLoading(true);
-      try {
-        const res = await fetch('/load');
-        if (res.ok) {
-          const data = await res.json();
-          accounts = data.accounts || [];
-          saveAccountsLocal();
-          await fetchExchangeRates();
-          renderAccounts();
-          updateTotals();
-          logActivity('Data loaded from server (manual)');
-          showToast('Data loaded successfully from file!', 'success');
-        } else {
-          showToast('Error loading data.', 'error');
-        }
-      } catch (error) {
-        console.error('Load error:', error);
-        showToast('Error loading data.', 'error');
-      }
-      showLoading(false);
+      await autoLoadDataFromServer();
     });
 
     /*************** EXPORT/IMPORT CSV ***************/
