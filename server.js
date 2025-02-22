@@ -18,12 +18,21 @@ let cachedListings = null;
 let lastListingsCall = 0; // timestamp ในหน่วยมิลลิวินาที
 
 // ตั้งค่า express-session
+// ตั้งค่า express-session
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  // กำหนด cookie ให้มีอายุ 30 วัน (30*24*60*60*1000 = 2592000000 มิลลิวินาที)
+  cookie: { 
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    // ถ้าต้องการให้ใช้ secure cookie ใน production ให้เปิดใช้งาน secure: true
+    // secure: process.env.NODE_ENV === 'production'
+  },
+  // ใช้ rolling เพื่อรีเซ็ตเวลา cookie ทุกครั้งที่มี request เข้ามา
+  rolling: true
 }));
+
 
 // ตั้งค่า Passport
 app.use(passport.initialize());
