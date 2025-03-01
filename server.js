@@ -14,6 +14,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const devmode = process.env.DEVMODE === 'true';
 
+const MongoStore = require('connect-mongo');
+
 let cachedListings = null;
 let lastListingsCall = 0; // timestamp ในหน่วยมิลลิวินาที
 
@@ -23,6 +25,11 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    // ตัวเลือกเพิ่มเติม
+    collectionName: 'sessions'
+  }),
   // กำหนด cookie ให้มีอายุ 30 วัน (30*24*60*60*1000 = 2592000000 มิลลิวินาที)
   cookie: { 
     maxAge: 30 * 24 * 60 * 60 * 1000,
@@ -281,6 +288,123 @@ app.get('/fng', async (req, res) => {
     res.status(500).json({ error: 'Failed to retrieve FNG data.' });
   }
 });
+
+async function autoLoadDataFromServer() {
+  if (!devmode && !loggedIn) return;
+  if (isLoadingData) return;
+
+  isLoadingData = true;
+  showLoading(true);
+
+  try {
+    const res = await fetch('/load');
+    
+    if (res.status === 401) {
+      // ผู้ใช้ไม่ได้รับอนุญาต -> redirect หรือโชว์ modal
+      window.location.href = '/login';
+      return; // หรือ return เพื่อหยุดการทำงานต่อ
+    }
+
+    if (!res.ok) {
+      throw new Error("Server load failed with status " + res.status);
+    }
+    
+    const data = await res.json();
+    accounts = data.accounts || [];
+    saveAccountsLocal();
+    await fetchExchangeRates();
+    renderAccounts();
+    updateTotals();
+    logActivity('Data auto-loaded from server');
+    showToast('Data loaded successfully from server!', 'success');
+  } catch (error) {
+    console.error('Auto-load error:', error);
+    showToast('Error loading data.', 'error');
+  }
+
+  showLoading(false);
+  isLoadingData = false;
+}
+
+// GOLD
+// ========== ตัวแปรและค่าคงที่สำหรับคำนวณทอง ==========
+let cachedGoldData = null; // เก็บผลลัพธ์ทั้งหมด (ราคาต่อ oz, ต่อบาท, etc.)
+let lastGoldFetchTime = 0;
+const CACHE_LIFETIME = 4 * 60 * 60 * 1000; // 4 ชั่วโมง
+
+// น้ำหนัก
+const GRAMS_PER_TROY_OUNCE = 31.1034768;
+const GRAMS_PER_BAHT_GOLD  = 15.244;
+const TROY_OZ_PER_BAHT     = GRAMS_PER_BAHT_GOLD / GRAMS_PER_TROY_OUNCE; // ~0.490105993
+
+/**
+ * Endpoint: /goldprice
+ *  - ถ้า cache ยังไม่หมดอายุ (4 ชม.) -> ส่งจาก cache
+ *  - เกิน 4 ชม. -> เรียก CurrencyLayer แล้วคำนวณ
+ */
+app.get('/goldprice', async (req, res) => {
+  const now = Date.now();
+
+  // 1) เช็ค cache
+  if (cachedGoldData && (now - lastGoldFetchTime < CACHE_LIFETIME)) {
+    return res.json({
+      ...cachedGoldData,
+      lastUpdate: new Date(lastGoldFetchTime).toISOString(),
+      source: 'cache'
+    });
+  }
+
+  // 2) ถ้าไม่มี cache หรือเกิน 4 ชม. -> เรียก API ใหม่
+  try {
+    // ขอกับ apilayer.net/api/live โดยจะขอ currencies = XAU,THB
+    const response = await axios.get('http://apilayer.net/api/live', {
+      params: {
+        access_key: process.env.Free_Forex_API,  // ใส่ key ของคุณในไฟล์ .env
+        currencies: 'XAU,THB',
+        source: 'USD',
+        format: 1
+      }
+    });
+    // ตัวอย่าง quotes: { "USDXAU": 0.00056..., "USDTHB": 34.12... }
+    const quotes = response.data.quotes;
+    if (!quotes || !quotes.USDXAU || !quotes.USDTHB) {
+      return res.status(500).json({ error: 'API response invalid' });
+    }
+
+    // 1 USD = quotes.USDXAU XAU -> 1 XAU = 1 / quotes.USDXAU USD
+    const goldPricePerOzUSD = 1 / quotes.USDXAU;
+    // ถ้ารู้ 1 USD = quotes.USDTHB THB => 1 XAU = goldPricePerOzUSD * quotes.USDTHB (THB/oz)
+    const goldPricePerOzTHB = goldPricePerOzUSD * quotes.USDTHB;
+    
+    // คำนวณราคา "1 บาททอง" ในหน่วย USD และ THB
+    // 1 บาททอง ~ 0.490105993 oz
+    const goldPricePerBahtUSD = goldPricePerOzUSD * TROY_OZ_PER_BAHT;
+    const goldPricePerBahtTHB = goldPricePerOzTHB * TROY_OZ_PER_BAHT;
+    
+    // เก็บใน cache
+    cachedGoldData = {
+      goldPricePerOzUSD,
+      goldPricePerOzTHB,
+      goldPricePerBahtUSD,
+      goldPricePerBahtTHB
+    };
+    lastGoldFetchTime = now;
+
+    return res.json({
+      ...cachedGoldData,
+      lastUpdate: new Date(now).toISOString(),
+      source: 'api'
+    });
+  } catch (error) {
+    console.error('Error fetching gold price:', error);
+    return res.status(500).json({ error: 'Failed to fetch gold price.' });
+  }
+});
+
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

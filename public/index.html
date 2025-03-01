@@ -23,18 +23,38 @@
     @keyframes spinner {
       to { transform: rotate(360deg); }
     }
-    /* ========= zoom-out effect บนมือถือ ========= */
+
+    /* ========= ปรับตารางให้ไม่ต้องเลื่อนซ้ายขวา (Mobile) ========= */
+    @media (max-width: 639px) {
+      /* ลดขนาด font-size ลง และลด padding เซลล์ */
+      .table-fixed.w-full.text-sm {
+        font-size: 0.75rem; /* ประมาณ text-xs ใน Tailwind */
+      }
+      .table-fixed.w-full.text-sm th,
+      .table-fixed.w-full.text-sm td {
+        padding: 0.5rem;
+        /* อนุญาตให้ข้อความหักบรรทัดแทนขยายตาราง */
+        white-space: normal;
+        word-wrap: break-word;
+      }
+    }
+
+    /* ========= zoom-out effect (ถ้ายังใช้อยู่) ========= */
     @media (max-width: 639px) {
       .zoom-out {
         transform: scale(0.8);
         transform-origin: top left;
-        width: 125%;
-        margin-bottom: -130px;
+        width: 100%;
+        margin-bottom: 1.5rem;
       }
       .zoom-out table {
         width: 100%;
       }
+      #coinFilterControls {
+        margin-bottom: 30px;
+      }
     }
+
     /* ========= สไตล์สำหรับ TradingView ========= */
     #chart {
       width: 100%;
@@ -124,6 +144,13 @@
           <option value="USD">USD</option>
         </select>
         <input type="text" id="accountGroup" placeholder="Group (optional)" class="w-48 px-4 py-2 border rounded">
+        <input 
+  type="text" 
+  id="accountSubgroup" 
+  placeholder="Sub-group (optional)" 
+  class="w-48 px-4 py-2 border rounded"
+>
+
         <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Add Account</button>
       </div>
     </form>
@@ -134,32 +161,71 @@
       <button id="loadBtn" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">Load Data</button>
     </div>
 
-    <!-- ตารางแสดงบัญชี -->
-    <div class="overflow-x-auto zoom-out">
-      <table class="w-full min-w-full bg-white border border-gray-200">
-        <thead>
-          <tr class="bg-gray-100">
-            <th class="py-2 px-4 border-b text-left">Account</th>
-            <th class="py-2 px-4 border-b text-left">Amount (in THB)</th>
-            <th class="py-2 px-4 border-b text-left">Original Currency</th>
-            <th class="py-2 px-4 border-b text-left">Actions</th>
+    <!-- ตารางแสดงบัญชี (Table-Fixed, ไม่เลื่อนซ้ายขวาในมือถือ) -->
+    <div class="overflow-hidden sm:overflow-x-auto mt-4 shadow border border-gray-200 rounded">
+      <table class="table-fixed w-full text-sm text-left text-gray-700">
+        <thead class="bg-gray-50 text-xs uppercase text-gray-700">
+          <tr>
+            <th scope="col" class="px-4 py-2">Account</th>
+            <th scope="col" class="px-4 py-2">Amount (in THB)</th>
+            <th scope="col" class="px-4 py-2">Original Currency</th>
+            <th scope="col" class="px-4 py-2">Actions</th>
           </tr>
         </thead>
         <tbody id="accountsList">
-          <!-- รายการบัญชีจะถูก render ผ่าน JavaScript -->
+          <!-- รายการบัญชี render โดย JS -->
         </tbody>
       </table>
     </div>
+    <!-- /ตาราง -->
 
-    <!-- ส่วนแสดงยอดรวม, Exchange Rate & FNG Cards -->
-    <div class="bg-gray-100 p-4 rounded mt-6">
-      <h3 class="text-xl font-semibold mb-2">Total Value:</h3>
-      <p class="font-medium">
-        THB: <span id="totalMain">0.00</span><br>
-        USD: <span id="totalUSD">0.00</span>
+   <!-- ส่วนแสดงยอดรวม, Exchange Rate & FNG Cards -->
+<div class="bg-gray-100 p-4 rounded mt-6">
+  <h3 class="text-xl font-semibold mb-4">Portfolio Value</h3>
+  <div class="flex flex-col sm:flex-row gap-4">
+    
+    <!-- Card #1: Total Value (All Groups) -->
+    <div class="flex-1 bg-white p-4 rounded shadow">
+      <h4 class="text-lg font-semibold mb-2">All Groups</h4>
+      <p class="text-gray-800">
+        <span class="font-medium">THB (All):</span>
+        <span id="totalMain" class="ml-1 font-semibold">0.00</span>
       </p>
-      <p id="exchangeRateDisplay" class="text-sm text-gray-700 mt-1"></p>
+      <p class="text-gray-800">
+        <span class="font-medium">USD (All):</span>
+        <span id="totalUSD" class="ml-1 font-semibold">0.00</span>
+      </p>
+      <p id="exchangeRateDisplay" class="text-sm text-gray-500 mt-2"></p>
+      <p id="goldPriceDisplay" class="text-sm text-gray-500 mt-1">
+        Gold Price: ...
+      </p>
+      
     </div>
+
+    <!-- Card #2: Total Value (Excluded) + Exclude Groups -->
+    <div class="flex-1 bg-white p-4 rounded shadow">
+      <h4 class="text-lg font-semibold mb-2">Excluded Groups</h4>
+      <p class="text-gray-800">
+        <span class="font-medium">THB (Excluded):</span>
+        <span id="totalExcludedTHB" class="ml-1 font-semibold">0.00</span>
+      </p>
+      <p class="text-gray-800">
+        <span class="font-medium">USD (Excluded):</span>
+        <span id="totalExcludedUSD" class="ml-1 font-semibold">0.00</span>
+      </p>
+
+      <!-- ส่วน Exclude Groups Checkbox -->
+      <div class="mt-4">
+        <label class="block font-medium mb-1">Exclude Groups:</label>
+        <div id="excludeGroupsContainer" class="flex flex-wrap gap-2">
+          <!-- checkboxes generated by renderExcludeGroupsUI() -->
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
 
     <!-- Filter Controls สำหรับ Coin Slider -->
     <div id="coinFilterControls" class="flex gap-4 items-center px-4 mt-4">
@@ -228,16 +294,12 @@
       </div>
     </div>
 
-    
-
     <!-- Chart Type Selector -->
     <div class="mt-6 mb-2">
       <label for="chartTypeSelect" class="font-medium mr-2">Select Chart Type:</label>
       <select id="chartTypeSelect" class="px-3 py-2 border rounded">
         <option value="line" selected>Line Chart</option>
         <option value="bar">Bar Chart</option>
-        
-        
       </select>
     </div>
 
@@ -302,13 +364,17 @@
     let chart;
     let currentChartType = "line";
     let isLoadingData = false; // flag สำหรับป้องกันการเรียกซ้ำ
-
+  
     /*************** GLOBAL VARIABLES FOR FAVORITES ***************/
     let favorites = JSON.parse(localStorage.getItem('favoriteCoins')) || [];
     let coinFilterMode = localStorage.getItem('coinFilterMode') || 'all';
     const filledStarIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.049 9.397c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/></svg>`;
     const outlinedStarIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.049 9.397c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/></svg>`;
-
+  
+    /* >>> (NEW) ตัวแปรเก็บสิ่งที่จะถูก exclude <<< */
+    let excludedGroups = JSON.parse(localStorage.getItem('excludedGroups')) || []; 
+    let excludedSubgroups = JSON.parse(localStorage.getItem('excludedSubgroups')) || []; 
+  
     function toggleFavorite(symbol) {
       if (favorites.includes(symbol)) {
         favorites = favorites.filter(s => s !== symbol);
@@ -319,6 +385,63 @@
       loadCoinSlider();
     }
 
+     /*************** GOLD ***************/
+     async function fetchGoldPrice() {
+  try {
+    const response = await fetch('/goldprice');
+    if (!response.ok) {
+      throw new Error('Network error: ' + response.status);
+    }
+    const data = await response.json();
+
+    // data: {
+    //   goldPricePerOzUSD, goldPricePerOzTHB,
+    //   goldPricePerBahtUSD, goldPricePerBahtTHB,
+    //   lastUpdate, source
+    // }
+
+    // 1) ปรับ dateFormat
+    const dateObj = new Date(data.lastUpdate);
+    // ตัวอย่าง format options
+    const dateFormatted = dateObj.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'long',   // "long" => "February", "short" => "Feb", ...
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+      // timeZone: 'Asia/Bangkok' // หากต้องการกำหนด timezone เฉพาะ
+    });
+
+    // 2) สร้างข้อความหลายบรรทัด
+    // (ถ้าใช้ textContent + \n => ต้องการ newline -> ให้ใส่ \n \n)
+    // แต่ที่สะดวกกว่าอาจใช้ innerHTML + <br>
+    let msg = `
+      Gold Price (1 oz): 
+      ${data.goldPricePerOzUSD.toLocaleString()} USD, 
+      ${data.goldPricePerOzTHB.toLocaleString()} THB<br>
+
+      Gold Price (1 Baht): 
+      ${data.goldPricePerBahtUSD.toLocaleString()} USD, 
+      ${data.goldPricePerBahtTHB.toLocaleString()} THB<br>
+
+      (Last update: ${dateFormatted} from ${data.source})
+    `;
+
+    // 3) เอาไปใส่ใน goldPriceDisplay ด้วย innerHTML
+    const goldElem = document.getElementById('goldPriceDisplay');
+    goldElem.innerHTML = msg;
+    
+  } catch (error) {
+    console.error('Error fetching gold price:', error);
+    document.getElementById('goldPriceDisplay').textContent = 'Gold Price: Error';
+  }
+}
+
+
+
+
+  
     /*************** UTILITY FUNCTIONS ***************/
     function logActivity(message) {
       const logList = document.getElementById('activityLog');
@@ -327,7 +450,7 @@
       li.textContent = `[${now}] ${message}`;
       logList.prepend(li);
     }
-
+  
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -339,11 +462,11 @@
         setTimeout(() => { toast.remove(); }, 300);
       }, 3000);
     }
-
+  
     function showLoading(show = true) {
       document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
     }
-
+  
     /*************** EXCHANGE RATE & LOCAL STORAGE ***************/
     async function fetchExchangeRates() {
       try {
@@ -365,7 +488,7 @@
         console.error("Error fetching exchange rates:", error);
       }
     }
-
+  
     async function fetchFNG() {
       try {
         const res = await fetch('/fng');
@@ -385,26 +508,37 @@
             const oneDay = 86400;
             const sevenDays = 7 * oneDay;
             const thirtyDays = 30 * oneDay;
+  
             function findClosest(target) {
               return historical.reduce((prev, curr) => {
                 return (Math.abs(parseInt(curr.timestamp) - target) < Math.abs(parseInt(prev.timestamp) - target)) ? curr : prev;
               });
             }
+  
             const yesterdayRecord = findClosest(latestTimestamp - oneDay);
             const lastWeekRecord = findClosest(latestTimestamp - sevenDays);
             const lastMonthRecord = findClosest(latestTimestamp - thirtyDays);
-            document.getElementById('historicalYesterday').textContent = yesterdayRecord.value + " (" + yesterdayRecord.value_classification + ")";
-            document.getElementById('historicalLastWeek').textContent = lastWeekRecord.value + " (" + lastWeekRecord.value_classification + ")";
-            document.getElementById('historicalLastMonth').textContent = lastMonthRecord.value + " (" + lastMonthRecord.value_classification + ")";
+  
+            document.getElementById('historicalYesterday').textContent =
+              yesterdayRecord.value + " (" + yesterdayRecord.value_classification + ")";
+            document.getElementById('historicalLastWeek').textContent =
+              lastWeekRecord.value + " (" + lastWeekRecord.value_classification + ")";
+            document.getElementById('historicalLastMonth').textContent =
+              lastMonthRecord.value + " (" + lastMonthRecord.value_classification + ")";
+  
             const yearlyHigh = historical.reduce((max, curr) => (curr.value > max.value ? curr : max), historical[0]);
             const yearlyLow = historical.reduce((min, curr) => (curr.value < min.value ? curr : min), historical[0]);
+  
             function formatDate(timestamp) {
               const date = new Date(parseInt(timestamp) * 1000);
               const options = { month: 'short', day: '2-digit', year: 'numeric' };
               return date.toLocaleDateString(undefined, options);
             }
-            document.getElementById('yearlyHigh').textContent = yearlyHigh.value + " (" + yearlyHigh.value_classification + ") on " + formatDate(yearlyHigh.timestamp);
-            document.getElementById('yearlyLow').textContent = yearlyLow.value + " (" + yearlyLow.value_classification + ") on " + formatDate(yearlyLow.timestamp);
+  
+            document.getElementById('yearlyHigh').textContent =
+              yearlyHigh.value + " (" + yearlyHigh.value_classification + ") on " + formatDate(yearlyHigh.timestamp);
+            document.getElementById('yearlyLow').textContent =
+              yearlyLow.value + " (" + yearlyLow.value_classification + ") on " + formatDate(yearlyLow.timestamp);
           }
         } else {
           console.error("Error fetching FNG data");
@@ -413,7 +547,7 @@
         console.error("Error fetching FNG data:", error);
       }
     }
-
+  
     function saveAccountsLocal() {
       localStorage.setItem('accounts', JSON.stringify(accounts));
     }
@@ -421,7 +555,116 @@
       const stored = localStorage.getItem('accounts');
       if (stored) { accounts = JSON.parse(stored); }
     }
-
+  
+    /*************** RENDER EXCLUDE CHECKBOX (GROUP + SUBGROUP) ***************/
+    function renderExcludeGroupsUI() {
+      // 1) สร้างโครงสร้าง group -> set(subgroups)
+      const groupsData = {};
+      accounts.forEach(acc => {
+        const grp = acc.group && acc.group.trim() !== "" ? acc.group : "Ungrouped";
+        const sub = acc.subgroup && acc.subgroup.trim() !== "" ? acc.subgroup : "";
+        if (!groupsData[grp]) {
+          groupsData[grp] = new Set();
+        }
+        if (sub) {
+          groupsData[grp].add(sub);
+        }
+      });
+  
+      // เตรียม container
+      const container = document.getElementById('excludeGroupsContainer');
+      container.innerHTML = "";
+  
+      // จัดลำดับให้กลุ่มที่ไม่มี sub-group ขึ้นก่อน
+      let allGroups = Object.keys(groupsData);
+      let groupNoSubs = [];
+      let groupWithSubs = [];
+  
+      allGroups.forEach(g => {
+        if (groupsData[g].size === 0) {
+          groupNoSubs.push(g);
+        } else {
+          groupWithSubs.push(g);
+        }
+      });
+  
+      let finalOrder = [...groupNoSubs, ...groupWithSubs]; // ไม่มี sub-group มาก่อน
+  
+      // 2) วนสร้าง checkbox group + sub-group
+      finalOrder.forEach(groupName => {
+        // wrapper
+        const groupWrapper = document.createElement('div');
+        groupWrapper.classList.add('mb-2', 'border', 'p-2', 'rounded');
+  
+        // checkbox ระดับ group
+        const groupCheckId = `excludeGroup_${groupName}`;
+        const groupLabel = document.createElement('label');
+        groupLabel.classList.add('flex', 'items-center', 'gap-2');
+  
+        const groupInput = document.createElement('input');
+        groupInput.type = 'checkbox';
+        groupInput.id = groupCheckId;
+        groupInput.value = groupName;
+        groupInput.checked = excludedGroups.includes(groupName);
+        groupInput.addEventListener('change', () => {
+          if (groupInput.checked) {
+            if (!excludedGroups.includes(groupName)) {
+              excludedGroups.push(groupName);
+            }
+          } else {
+            excludedGroups = excludedGroups.filter(g => g !== groupName);
+          }
+          localStorage.setItem('excludedGroups', JSON.stringify(excludedGroups));
+          updateTotals();
+        });
+  
+        groupLabel.appendChild(groupInput);
+  
+        const groupText = document.createElement('span');
+        groupText.textContent = groupName;
+        groupLabel.appendChild(groupText);
+  
+        groupWrapper.appendChild(groupLabel);
+  
+        // checkbox sub-group ถ้ามี
+        const subSet = groupsData[groupName];
+        subSet.forEach(subName => {
+          const combinedKey = `${groupName}::${subName}`;
+          const subCheckId = `excludeSub_${combinedKey}`;
+  
+          const subLabel = document.createElement('label');
+          subLabel.classList.add('ml-6', 'flex', 'items-center', 'gap-2');
+  
+          const subInput = document.createElement('input');
+          subInput.type = 'checkbox';
+          subInput.id = subCheckId;
+          subInput.value = combinedKey;
+          subInput.checked = excludedSubgroups.includes(combinedKey);
+          subInput.addEventListener('change', () => {
+            if (subInput.checked) {
+              if (!excludedSubgroups.includes(combinedKey)) {
+                excludedSubgroups.push(combinedKey);
+              }
+            } else {
+              excludedSubgroups = excludedSubgroups.filter(x => x !== combinedKey);
+            }
+            localStorage.setItem('excludedSubgroups', JSON.stringify(excludedSubgroups));
+            updateTotals();
+          });
+  
+          subLabel.appendChild(subInput);
+  
+          const subText = document.createElement('span');
+          subText.textContent = `- ${subName}`;
+          subLabel.appendChild(subText);
+  
+          groupWrapper.appendChild(subLabel);
+        });
+  
+        container.appendChild(groupWrapper);
+      });
+    }
+  
     function convertToMain(amount, currency) {
       if (currency === mainCurrency) return parseFloat(amount);
       if (currency === "USD") {
@@ -431,23 +674,50 @@
       }
       return 0;
     }
-
+  
+    /*************** UPDATE TOTALS (ALL + EXCLUDED) ***************/
     function updateTotals() {
-      let totalTHB = 0;
+      // === 1) All Groups ===
+      let totalTHBAll = 0;
       accounts.forEach(acc => {
-        totalTHB += convertToMain(acc.amount, acc.currency);
+        totalTHBAll += convertToMain(acc.amount, acc.currency);
       });
       document.getElementById('totalMain').textContent =
-        totalTHB.toLocaleString(undefined, { style: 'currency', currency: mainCurrency });
-      let totalUSD = 0;
+        totalTHBAll.toLocaleString(undefined, { style: 'currency', currency: mainCurrency });
+  
+      let totalUSDAll = 0;
       const rateUSD = parseFloat(exchangeRates["USD"]);
       if (rateUSD && rateUSD !== 0) {
-        totalUSD = totalTHB * rateUSD;
+        totalUSDAll = totalTHBAll * rateUSD;
       }
       document.getElementById('totalUSD').textContent =
-        totalUSD.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+        totalUSDAll.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+  
+      // === 2) Excluded Groups + Subgroups ===
+      let totalTHBExcluded = 0;
+      accounts.forEach(acc => {
+        const grp = acc.group && acc.group.trim() !== "" ? acc.group : "Ungrouped";
+        const sub = acc.subgroup && acc.subgroup.trim() !== "" ? acc.subgroup : "";
+        const combinedKey = `${grp}::${sub}`;
+  
+        // exclude ถ้า group ถูกติ๊ก หรือ (ถ้ามี sub) subgroup ถูกติ๊ก
+        if (excludedGroups.includes(grp)) return;
+        if (sub && excludedSubgroups.includes(combinedKey)) return;
+  
+        totalTHBExcluded += convertToMain(acc.amount, acc.currency);
+      });
+  
+      document.getElementById('totalExcludedTHB').textContent =
+        totalTHBExcluded.toLocaleString(undefined, { style: 'currency', currency: mainCurrency });
+  
+      let totalUSDExcluded = 0;
+      if (rateUSD && rateUSD !== 0) {
+        totalUSDExcluded = totalTHBExcluded * rateUSD;
+      }
+      document.getElementById('totalExcludedUSD').textContent =
+        totalUSDExcluded.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     }
-
+  
     // Render accounts into the table
     function renderAccounts() {
       let list = accounts.slice();
@@ -460,50 +730,92 @@
         list.sort((a, b) => a.currency.localeCompare(b.currency));
       }
       
+      // สร้าง group -> sub-group -> array
       const groups = {};
       list.forEach(account => {
         const grp = account.group && account.group.trim() !== "" ? account.group : "Ungrouped";
-        if (!groups[grp]) groups[grp] = [];
-        groups[grp].push(account);
+        const subgrp = account.subgroup && account.subgroup.trim() !== "" ? account.subgroup : "";
+        if (!groups[grp]) {
+          groups[grp] = {};
+        }
+        if (!groups[grp][subgrp]) {
+          groups[grp][subgrp] = [];
+        }
+        groups[grp][subgrp].push(account);
       });
-      
+  
       const tbody = document.getElementById('accountsList');
       let html = "";
+  
+      // วน loop group
       for (const groupName in groups) {
-        html += `<tr class="bg-gray-200"><td colspan="4" class="py-2 px-4 font-bold">${groupName}</td></tr>`;
-        groups[groupName].forEach(account => {
-          let convertedText = "";
-          if (account.currency !== mainCurrency && exchangeRates[account.currency]) {
-            const converted = convertToMain(account.amount, account.currency);
-            convertedText = `<br/><span class="text-sm text-gray-600">≈ ${converted.toLocaleString(undefined, { style: 'currency', currency: mainCurrency })}</span>`;
+        // แสดงหัวข้อ group
+        html += `
+          <tr class="bg-gray-100 font-bold text-gray-700 text-sm">
+            <td colspan="4" class="px-4 py-2 uppercase">
+              ${groupName}
+            </td>
+          </tr>
+        `;
+  
+        // วน loop sub-group
+        const subgroupsObj = groups[groupName];
+        for (const subGroupName in subgroupsObj) {
+          if (subGroupName.trim() !== "") {
+            html += `
+              <tr class="bg-gray-50 italic text-gray-600 text-sm">
+                <td colspan="4" class="px-4 py-2 pl-8">
+                  - ${subGroupName}
+                </td>
+              </tr>
+            `;
           }
-          html += `
-            <tr>
-              <td class="py-2 px-4 border-b">${account.name}</td>
-              <td class="py-2 px-4 border-b">
-                ${parseFloat(account.amount).toLocaleString()} ${account.currency}
-                ${convertedText}
-              </td>
-              <td class="py-2 px-4 border-b">${account.currency}</td>
-              <td class="py-2 px-4 border-b">
-                <button type="button" onclick="editAccount('${account.id}')" class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
-                <button type="button" onclick="confirmDelete('${account.id}')" class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
-              </td>
-            </tr>
-          `;
-        });
+          subgroupsObj[subGroupName].forEach(account => {
+            const convertedText = (account.currency !== mainCurrency)
+              ? `<br/><span class="text-sm text-gray-600">
+                   ≈ ${convertToMain(account.amount, account.currency)
+                      .toLocaleString(undefined, { style: 'currency', currency: mainCurrency })}
+                 </span>`
+              : "";
+  
+            html += `
+              <tr class="border-b hover:bg-gray-50">
+                <td class="px-4 py-2">
+                  ${account.name}
+                </td>
+                <td class="px-4 py-2">
+                  ${parseFloat(account.amount).toLocaleString()} ${account.currency}
+                  ${convertedText}
+                </td>
+                <td class="px-4 py-2">${account.currency}</td>
+                <td class="px-4 py-2">
+                  <button type="button" onclick="editAccount('${account.id}')" 
+                    class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
+                  <button type="button" onclick="confirmDelete('${account.id}')" 
+                    class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
+                </td>
+              </tr>
+            `;
+          });
+        }
       }
+  
       tbody.innerHTML = html;
+  
+      // อัปเดต chart
       updateChart();
+  
+      // Render UI สำหรับ Checkbox Exclude Groups/Subgroups
+      renderExcludeGroupsUI();
     }
-
+  
     function getNumericValue(parsed) {
       if (typeof parsed === 'object' && parsed !== null) {
         return parsed.y !== undefined ? parsed.y : parsed.x || 0;
       }
       return typeof parsed === 'number' ? parsed : 0;
     }
-
+  
     function shadeColor(color, percent) {
       let R = parseInt(color.substring(1, 3), 16);
       let G = parseInt(color.substring(3, 5), 16);
@@ -519,17 +831,25 @@
       const BB = B.toString(16).padStart(2, "0");
       return "#" + RR + GG + BB;
     }
-
+  
     function updateChart() {
-      const nameTotals = {};
+      // 1) สร้างตัวสะสมยอดเงินตาม Group
+      const groupTotals = {};
       accounts.forEach((acc) => {
+        const grp = acc.group && acc.group.trim() !== "" ? acc.group : "Ungrouped";
         const amtTHB = convertToMain(acc.amount, acc.currency);
-        if (!nameTotals[acc.name]) nameTotals[acc.name] = 0;
-        nameTotals[acc.name] += amtTHB;
+        if (!groupTotals[grp]) groupTotals[grp] = 0;
+        groupTotals[grp] += amtTHB;
       });
-      const sortedEntries = Object.entries(nameTotals).sort((a, b) => b[1] - a[1]);
-      const labels = sortedEntries.map(e => e[0]);
-      const data = sortedEntries.map(e => e[1]);
+  
+      // 2) แปลง groupTotals ให้เป็น array แล้ว sort
+      const sortedEntries = Object.entries(groupTotals).sort((a, b) => b[1] - a[1]);
+  
+      // 3) สร้าง labels/data
+      const labels = sortedEntries.map(([groupName]) => groupName);
+      const data = sortedEntries.map(([, total]) => total);
+  
+      // 4) สี
       const palette = [
         "#FF6384",
         "#36A2EB",
@@ -540,6 +860,7 @@
         "#66BB6A",
         "#42A5F5"
       ];
+  
       let datasetConfig = {
         label: "Distribution (in THB)",
         data: data,
@@ -553,12 +874,17 @@
         fill: true,
         backgroundColor: palette[0] + "33"
       };
+  
       const commonOptions = {
         responsive: true,
         maintainAspectRatio: false,
         layout: { padding: 20 },
         plugins: {
-          legend: { display: true, position: "top", labels: { font: { size: 14, family: "Arial, sans-serif" } } },
+          legend: {
+            display: true,
+            position: "top",
+            labels: { font: { size: 14, family: "Arial, sans-serif" } }
+          },
           tooltip: {
             callbacks: {
               label: function (context) {
@@ -593,6 +919,7 @@
           y: { grid: { color: "#f0f0f0" }, ticks: { beginAtZero: true, font: { size: 12 } } }
         }
       };
+  
       if (chart) {
         chart.config.type = currentChartType;
         chart.data.labels = labels;
@@ -609,7 +936,7 @@
         });
       }
     }
-
+  
     function setupChartTypeSelector() {
       const chartTypeSelect = document.getElementById('chartTypeSelect');
       if (chartTypeSelect) {
@@ -619,7 +946,7 @@
         });
       }
     }
-
+  
     /*************** AUTO LOAD & AUTO SAVE FUNCTIONS ***************/
     async function autoSaveDataToServer() {
       if (!devmode && !loggedIn) return;
@@ -642,7 +969,7 @@
       }
       showLoading(false);
     }
-
+  
     async function autoLoadDataFromServer() {
       if (!devmode && !loggedIn) return;
       if (isLoadingData) return;
@@ -673,7 +1000,7 @@
       showLoading(false);
       isLoadingData = false;
     }
-
+  
     /*************** COIN SLIDER: โหลดข้อมูลจาก CoinMarketCap API ***************/
     async function loadCoinSlider() {
       try {
@@ -697,7 +1024,7 @@
           const changeColor = percentChange < 0 ? 'red' : 'green';
           const priceFormatted = `$${price.toFixed(2)}`;
           const percentFormatted = `${Math.abs(percentChange).toFixed(2)}%`;
-          
+  
           // ตรวจสอบว่าเหรียญนี้เป็น favorite หรือไม่
           const isFav = favorites.includes(coin.symbol);
           const starIcon = isFav ? filledStarIcon : outlinedStarIcon;
@@ -707,7 +1034,7 @@
             <button class="absolute top-2 right-2 focus:outline-none" onclick="toggleFavorite('${coin.symbol}')">
               ${starIcon}
             </button>
-            <a target="_blank" href="/currencies/${coin.slug}/" class="block">
+          <div class="block">
               <img class="w-16 h-16 mx-auto mb-2 rounded-full border border-gray-200" src="https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png" alt="${coin.name} Logo" loading="lazy">
               <div class="text-center">
                 <span class="block font-bold text-lg text-gray-800">${coin.name}</span>
@@ -718,7 +1045,7 @@
                 </span>
               </div>
               <img class="w-full mt-3" src="https://s3.coinmarketcap.com/generated/sparklines/web/1d/2781/${coin.id}.svg" alt="${coin.name} Price Graph">
-            </a>
+            </div>
           </div>
           `;
         });
@@ -727,7 +1054,7 @@
         console.error("Error loading coin slider:", error);
       }
     }
-
+  
     /*************** FORM SUBMIT (Add/Edit Account) ***************/
     document.addEventListener('DOMContentLoaded', () => {
       setupChartTypeSelector();
@@ -754,7 +1081,8 @@
           name: document.getElementById('accountName').value,
           amount: document.getElementById('accountAmount').value,
           currency: document.getElementById('accountCurrency').value,
-          group: document.getElementById('accountGroup').value.trim() || "Ungrouped"
+          group: document.getElementById('accountGroup').value.trim() || "Ungrouped",
+          subgroup: document.getElementById('accountSubgroup').value.trim(),
         };
         if (editingId) {
           const idx = accounts.findIndex(a => a.id === editingId);
@@ -774,16 +1102,17 @@
         await autoSaveDataToServer();
       });
     });
-
+  
     function editAccount(id) {
       const acc = accounts.find(a => a.id === id);
       document.getElementById('accountName').value = acc.name;
       document.getElementById('accountAmount').value = acc.amount;
       document.getElementById('accountCurrency').value = acc.currency;
       document.getElementById('accountGroup').value = acc.group || "";
+      document.getElementById('accountSubgroup').value = acc.subgroup || "";
       editingId = id;
     }
-
+  
     function confirmDelete(id) {
       accountToDelete = id;
       document.getElementById('confirmModal').classList.remove('hidden');
@@ -805,7 +1134,7 @@
       }
       document.getElementById('confirmModal').classList.add('hidden');
     });
-
+  
     document.getElementById('saveBtn').addEventListener('click', async () => {
       showLoading(true);
       try {
@@ -826,11 +1155,11 @@
       }
       showLoading(false);
     });
-
+  
     document.getElementById('loadBtn').addEventListener('click', async () => {
       await autoLoadDataFromServer();
     });
-
+  
     document.getElementById('exportBtn').addEventListener('click', () => {
       let csvContent = "data:text/csv;charset=utf-8,Name,Amount,Currency,Group\n";
       accounts.forEach(acc => {
@@ -846,7 +1175,7 @@
       logActivity('Exported data as CSV');
       showToast('Data exported as CSV!', 'success');
     });
-
+  
     document.getElementById('importInput').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -878,9 +1207,9 @@
       };
       reader.readAsText(file);
     });
-
+  
     document.getElementById('sortSelect').addEventListener('change', renderAccounts);
-
+  
     if (devmode) {
       document.getElementById('loginForm').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -901,7 +1230,7 @@
         }
       });
     }
-
+  
     async function checkLoginStatus() {
       try {
         const res = await fetch('/user');
@@ -916,12 +1245,12 @@
         console.error('Error checking login status:', error);
       }
     }
-
+  
     const btnPortfolio = document.getElementById('btnPortfolio');
     const btnTradingView = document.getElementById('btnTradingView');
     const appContainer = document.getElementById('appContainer');
     const tradingviewOverlay = document.getElementById('tradingviewOverlay');
-
+  
     btnPortfolio.addEventListener('click', () => {
       tradingviewOverlay.classList.add('hidden');
       appContainer.classList.remove('hidden');
@@ -930,7 +1259,7 @@
       appContainer.classList.add('hidden');
       tradingviewOverlay.classList.remove('hidden');
     });
-
+  
     window.addEventListener('load', async () => {
       await checkLoginStatus();
       await fetchExchangeRates();
@@ -940,8 +1269,9 @@
       updateTotals();
       // โหลด coin slider หลังจากโหลดหน้า
       loadCoinSlider();
+      await fetchGoldPrice(); 
     });
-
+  
     document.addEventListener('visibilitychange', async () => {
       if (!document.hidden) {
         await autoLoadDataFromServer();
@@ -951,52 +1281,6 @@
       await autoLoadDataFromServer();
     });
   </script>
-
-  <!-- ================== SCRIPT สำหรับ TradingView Widget (จดจำ symbol/interval) ================== -->
-  <script>
-    const savedSymbol   = localStorage.getItem('tvSymbol')   || "BINANCE:DOGEUSDT";
-    const savedInterval = localStorage.getItem('tvInterval') || "240";
-
-    const tvWidget = new TradingView.widget({
-      "autosize": true,
-      "symbol": savedSymbol,
-      "interval": savedInterval,
-      "theme": "dark",
-      "style": "1",
-      "locale": "en",
-      "toolbar_bg": "#f1f3f6",
-      "hide_side_toolbar": true,
-      "allow_symbol_change": true,
-      "watchlist": [
-          "BINANCE:SOLUSDT",
-          "BINANCE:DOGEUSDT",
-          "BINANCE:PEPEUSDT",
-          "BINANCE:TRUMPUSDT",
-          "BINANCE:BTCUSDT",
-          "BINANCE:ETHUSDT",
-          "NASDAQ:NVDA",
-          "NYSE:TSM"
-      ],
-      "details": true,
-      "hotlist": true,
-      "calendar": true,
-      "studies": ["STD;SMA"],
-      "container_id": "chart",
-      "show_popup_button": true,
-      "popup_width": "1000",
-      "popup_height": "650"
-    });
-
-    if (typeof tvWidget.onChartReady === "function") {
-      tvWidget.onChartReady(() => {
-        tvWidget.chart().onSymbolChanged().subscribe(null, (symbolData) => {
-          localStorage.setItem('tvSymbol', symbolData.name);
-        });
-        tvWidget.chart().onIntervalChanged().subscribe(null, (newInterval) => {
-          localStorage.setItem('tvInterval', newInterval);
-        });
-      });
-    }
-  </script>
+  
 </body>
 </html>
