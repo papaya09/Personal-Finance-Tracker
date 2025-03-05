@@ -5,27 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AssetFusion Hub</title>
-  
-  <!-- ตั้งค่า dark mode โดยเพิ่ม/ลบคลาสบน <html> ตาม localStorage หรือ system preference -->
-  <script>
-    if (
-      localStorage.getItem('color-theme') === 'dark' ||
-      (!('color-theme' in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  </script>
-  
   <!-- Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- กำหนด tailwind config ให้ใช้ dark mode แบบ class -->
-  <script>
-    tailwind.config = {
-      darkMode: 'class'
-    }
-  </script>
   <!-- Chart.js (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Chart.js Data Labels Plugin -->
@@ -94,13 +75,13 @@
   </style>
 </head>
 
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-50 m-0">
+<body class="bg-gray-50 text-gray-900 m-0">
   <!-- ================== LOGIN MODAL ================== -->
   <div id="loginModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div class="bg-white dark:bg-gray-800 rounded shadow p-6 w-80 md:w-96">
-      <h2 class="text-xl font-bold mb-4 text-center dark:text-gray-200">Login</h2>
+    <div class="bg-white rounded shadow p-6 w-80 md:w-96">
+      <h2 class="text-xl font-bold mb-4 text-center">Login</h2>
       <form id="loginForm" class="space-y-4">
-        <a href="/auth/google" class="w-full px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded block text-center mt-4">
+        <a href="/auth/google" class="w-full px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600 block text-center mt-4">
           Login with Google
         </a>
       </form>
@@ -109,42 +90,28 @@
   <!-- ================== /LOGIN MODAL ================== -->
 
   <!-- ================== HEADER (Sticky Tabs) ================== -->
-  <header class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow">
-    <div class="flex justify-center items-center space-x-4 py-3">
-      <button id="btnPortfolio" class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded hover:bg-indigo-700 dark:hover:bg-indigo-600">
-        Portfolio
-      </button>
-      <button id="btnTradingView" class="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded hover:bg-indigo-700 dark:hover:bg-indigo-600">
-        TradingView
-      </button>
-      <button id="theme-toggle" class="p-2 bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-100 rounded">
-        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-        </svg>
-        <svg id="theme-toggle-dark-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" fill-rule="evenodd"></path>
-        </svg>
-      </button>
+  <header class="fixed top-0 left-0 right-0 z-50 bg-white shadow">
+    <div class="flex justify-center py-2">
+      <button id="btnPortfolio" class="mx-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Portfolio</button>
+      <button id="btnTradingView" class="mx-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">TradingView</button>
     </div>
   </header>
 
   <!-- ================== CONTENT: Portfolio ================== -->
-  <main id="appContainer" class="max-w-5xl mx-auto p-4 mt-[4rem] hidden bg-gray-50 dark:bg-gray-900">
+  <main id="appContainer" class="max-w-5xl mx-auto p-4 mt-[4rem] hidden">
     <!-- Header ของ Portfolio -->
     <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
-      <h1 class="text-3xl font-bold mb-2 sm:mb-0 dark:text-gray-200">Portfolio Summary</h1>
+      <h1 class="text-3xl font-bold mb-2 sm:mb-0">Portfolio Summary</h1>
       <div class="flex items-center space-x-4">
-        <span class="font-medium dark:text-gray-300">Main Currency: THB</span>
-        <a href="/logout" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
-          Logout
-        </a>
+        <span class="font-medium">Main Currency: THB</span>
+        <a href="/logout" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Logout</a>
       </div>
     </div>
     
     <!-- Controls: Sort & Export/Import -->
     <div class="flex flex-col sm:flex-row justify-between gap-4 mb-4">
       <div>
-        <select id="sortSelect" class="px-3 py-2 border rounded dark:bg-gray-800 dark:text-gray-200">
+        <select id="sortSelect" class="px-3 py-2 border rounded">
           <option value="default">Sort By...</option>
           <option value="name">Name</option>
           <option value="amount">Amount</option>
@@ -152,12 +119,8 @@
         </select>
       </div>
       <div class="flex gap-2">
-        <button id="exportBtn" class="px-3 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded">
-          Export CSV
-        </button>
-        <label for="importInput" class="px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded cursor-pointer">
-          Import CSV
-        </label>
+        <button id="exportBtn" class="px-3 py-2 bg-teal-500 text-white rounded hover:bg-teal-600">Export CSV</button>
+        <label for="importInput" class="px-3 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 cursor-pointer">Import CSV</label>
         <input type="file" id="importInput" accept=".csv" class="hidden">
       </div>
     </div>
@@ -165,49 +128,44 @@
     <!-- Form สำหรับเพิ่มบัญชี -->
     <form id="accountForm" class="mb-6">
       <div class="flex flex-col sm:flex-row gap-4">
-        <input type="text" id="accountName" placeholder="Account name" required class="flex-1 px-4 py-2 border rounded dark:bg-gray-800 dark:text-gray-200">
-        <input type="number" id="accountAmount" step="0.01" placeholder="Amount" required class="w-32 px-4 py-2 border rounded dark:bg-gray-800 dark:text-gray-200">
-        <input type="number" id="accountCost" step="0.01" placeholder="Cost" class="w-32 px-4 py-2 border rounded dark:bg-gray-800 dark:text-gray-200">
-        <select id="accountCurrency" required class="w-28 px-4 py-2 border rounded dark:bg-gray-800 dark:text-gray-200">
+        <input type="text" id="accountName" placeholder="Account name" required class="flex-1 px-4 py-2 border rounded">
+        <input type="number" id="accountAmount" step="0.01" placeholder="Amount" required class="w-32 px-4 py-2 border rounded">
+        <!-- (NEW) เพิ่ม input สำหรับต้นทุน (Cost) -->
+        <input type="number" id="accountCost" step="0.01" placeholder="Cost" class="w-32 px-4 py-2 border rounded">
+        <select id="accountCurrency" required class="w-28 px-4 py-2 border rounded">
           <option value="THB">THB</option>
           <option value="USD">USD</option>
         </select>
-        <!-- Group Selector + Manual -->
+        <!-- (NEW) Group Selector + Manual -->
         <div class="flex flex-col">
-          <label for="accountGroupSelect" class="font-medium dark:text-gray-200">Group</label>
-          <select id="accountGroupSelect" class="w-48 px-4 py-2 border rounded mt-1 dark:bg-gray-800 dark:text-gray-200">
+          <label for="accountGroupSelect" class="font-medium">Group</label>
+          <select id="accountGroupSelect" class="w-48 px-4 py-2 border rounded mt-1">
             <!-- options auto-generated by JS -->
           </select>
-          <input type="text" id="accountGroupManual" placeholder="Type new group..." class="w-48 px-4 py-2 border rounded mt-2 hidden dark:bg-gray-800 dark:text-gray-200" />
+          <input type="text" id="accountGroupManual" placeholder="Type new group..." class="w-48 px-4 py-2 border rounded mt-2 hidden" />
         </div>
-        <!-- Subgroup Selector + Manual -->
+        <!-- (NEW) Subgroup Selector + Manual -->
         <div class="flex flex-col">
-          <label for="accountSubgroupSelect" class="font-medium dark:text-gray-200">Sub-group</label>
-          <select id="accountSubgroupSelect" class="w-48 px-4 py-2 border rounded mt-1 dark:bg-gray-800 dark:text-gray-200">
+          <label for="accountSubgroupSelect" class="font-medium">Sub-group</label>
+          <select id="accountSubgroupSelect" class="w-48 px-4 py-2 border rounded mt-1">
             <!-- options auto-generated by JS -->
           </select>
-          <input type="text" id="accountSubgroupManual" placeholder="Type new sub-group..." class="w-48 px-4 py-2 border rounded mt-2 hidden dark:bg-gray-800 dark:text-gray-200" />
+          <input type="text" id="accountSubgroupManual" placeholder="Type new sub-group..." class="w-48 px-4 py-2 border rounded mt-2 hidden" />
         </div>
-        <button type="submit" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded">
-          Add Account
-        </button>
+        <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Add Account</button>
       </div>
     </form>
 
     <!-- ปุ่มสำหรับ Save/Load -->
     <div class="flex flex-col sm:flex-row gap-4 mb-6">
-      <button id="saveBtn" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded">
-        Save Data
-      </button>
-      <button id="loadBtn" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded">
-        Load Data
-      </button>
+      <button id="saveBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Save Data</button>
+      <button id="loadBtn" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">Load Data</button>
     </div>
 
     <!-- ตารางแสดงบัญชี -->
-    <div class="overflow-hidden sm:overflow-x-auto mt-4 shadow border border-gray-200 dark:border-gray-700 rounded">
-      <table class="table-fixed w-full text-sm text-left text-gray-700 dark:text-gray-200">
-        <thead class="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-700 dark:text-gray-200">
+    <div class="overflow-hidden sm:overflow-x-auto mt-4 shadow border border-gray-200 rounded">
+      <table class="table-fixed w-full text-sm text-left text-gray-700">
+        <thead class="bg-gray-50 text-xs uppercase text-gray-700">
           <tr>
             <th scope="col" class="px-4 py-2">Account</th>
             <th scope="col" class="px-4 py-2">Amount (in THB)</th>
@@ -222,66 +180,66 @@
     </div>
 
     <!-- ส่วนแสดงยอดรวม, Exchange Rate & FNG Cards -->
-    <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded mt-6">
-      <h3 class="text-xl font-semibold mb-4 dark:text-gray-200">Portfolio Value</h3>
+    <div class="bg-gray-100 p-4 rounded mt-6">
+      <h3 class="text-xl font-semibold mb-4">Portfolio Value</h3>
       <div class="flex flex-col sm:flex-row gap-4">
         <!-- Card #1: All Groups -->
-        <div class="flex-1 bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h4 class="text-lg font-semibold mb-2 dark:text-gray-200">All Groups</h4>
-          <p class="text-gray-800 dark:text-gray-300">
+        <div class="flex-1 bg-white p-4 rounded shadow">
+          <h4 class="text-lg font-semibold mb-2">All Groups</h4>
+          <p class="text-gray-800">
             <span class="font-medium">THB (All):</span>
             <span id="totalMain" class="ml-1 font-semibold">0.00</span>
           </p>
-          <p class="text-gray-800 dark:text-gray-300">
+          <p class="text-gray-800">
             <span class="font-medium">USD (All):</span>
             <span id="totalUSD" class="ml-1 font-semibold">0.00</span>
           </p>
-          <p id="exchangeRateDisplay" class="text-sm text-gray-500 dark:text-gray-400 mt-2"></p>
-          <p id="goldPriceDisplay" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p id="exchangeRateDisplay" class="text-sm text-gray-500 mt-2"></p>
+          <p id="goldPriceDisplay" class="text-sm text-gray-500 mt-1">
             Gold Price: ...
           </p>
         </div>
         <!-- Card #2: Excluded Groups -->
-        <div class="flex-1 bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h4 class="text-lg font-semibold mb-2 dark:text-gray-200">Excluded Groups</h4>
-          <p class="text-gray-800 dark:text-gray-300">
+        <div class="flex-1 bg-white p-4 rounded shadow">
+          <h4 class="text-lg font-semibold mb-2">Excluded Groups</h4>
+          <p class="text-gray-800">
             <span class="font-medium">THB (Excluded):</span>
             <span id="totalExcludedTHB" class="ml-1 font-semibold">0.00</span>
           </p>
-          <p class="text-gray-800 dark:text-gray-300">
+          <p class="text-gray-800">
             <span class="font-medium">USD (Excluded):</span>
             <span id="totalExcludedUSD" class="ml-1 font-semibold">0.00</span>
           </p>
           <div class="mt-4">
-            <label class="block font-medium mb-1 dark:text-gray-200">Exclude Groups:</label>
+            <label class="block font-medium mb-1">Exclude Groups:</label>
             <div id="excludeGroupsContainer" class="flex flex-wrap gap-2">
               <!-- checkboxes generated by renderExcludeGroupsUI() -->
             </div>
           </div>
         </div>
       </div>
-      <!-- Row: Profit / Loss Overview and Profit / Loss Excluded Groups -->
+      <!-- New Row: Profit / Loss Overview and Profit / Loss Excluded Groups -->
       <div class="flex flex-col sm:flex-row gap-4 mt-4">
         <!-- Profit / Loss Overview (All Groups) -->
-        <div class="flex-1 bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h4 class="text-lg font-semibold mb-2 dark:text-gray-200">Profit / Loss Overview</h4>
-          <p class="text-gray-800 dark:text-gray-300">
+        <div class="flex-1 bg-white p-4 rounded shadow">
+          <h4 class="text-lg font-semibold mb-2">Profit / Loss Overview</h4>
+          <p class="text-gray-800">
             <span class="font-medium">Total Cost:</span>
             <span id="totalCost" class="ml-1 font-semibold">0.00</span>
           </p>
-          <p class="text-gray-800 dark:text-gray-300">
+          <p class="text-gray-800">
             <span class="font-medium">Profit / Loss:</span>
             <span id="totalProfitLoss" class="ml-1 font-semibold">0.00</span>
           </p>
         </div>
         <!-- Profit / Loss Excluded Groups -->
-        <div class="flex-1 bg-white dark:bg-gray-800 p-4 rounded shadow">
-          <h4 class="text-lg font-semibold mb-2 dark:text-gray-200">Profit / Loss Excluded Groups</h4>
-          <p class="text-gray-800 dark:text-gray-300">
+        <div class="flex-1 bg-white p-4 rounded shadow">
+          <h4 class="text-lg font-semibold mb-2">Profit / Loss Excluded Groups</h4>
+          <p class="text-gray-800">
             <span class="font-medium">Total Cost:</span>
             <span id="totalCostExcluded" class="ml-1 font-semibold">0.00</span>
           </p>
-          <p class="text-gray-800 dark:text-gray-300">
+          <p class="text-gray-800">
             <span class="font-medium">Profit / Loss:</span>
             <span id="totalProfitLossExcluded" class="ml-1 font-semibold">0.00</span>
           </p>
@@ -291,31 +249,27 @@
 
     <!-- Filter Controls สำหรับ Coin Slider -->
     <div id="coinFilterControls" class="flex gap-4 items-center px-4 mt-4">
-      <button id="showAllBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none">
-        Show All
-      </button>
-      <button id="showFavBtn" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none">
-        Show Favorites
-      </button>
+      <button id="showAllBtn" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none">Show All</button>
+      <button id="showFavBtn" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none">Show Favorites</button>
     </div>
 
     <!-- Coin Slider -->
     <div id="coinSlider" class="flex gap-6 overflow-x-auto px-4 snap-x snap-mandatory"></div>
 
     <!-- Card สำหรับแสดง Latest FNG (Main Card) -->
-    <div id="fngCard" class="max-w-sm mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden mt-4">
+    <div id="fngCard" class="max-w-sm mx-auto bg-white shadow-lg rounded-lg overflow-hidden mt-4">
       <div class="p-4">
-        <h2 class="text-xl font-bold text-center mb-4 dark:text-gray-200">CMC Crypto Fear and Greed Index</h2>
+        <h2 class="text-xl font-bold text-center mb-4">CMC Crypto Fear and Greed Index</h2>
         <div class="flex justify-center">
           <div class="relative w-36 h-36">
             <svg class="w-full h-full" viewBox="0 0 100 100">
-              <circle class="text-gray-300 dark:text-gray-600" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"></circle>
+              <circle class="text-gray-300" stroke-width="8" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"></circle>
               <circle id="fngProgress" class="text-green-500" stroke-width="8" stroke-linecap="round" stroke="currentColor" fill="transparent" r="40" cx="50" cy="50"
                 stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
             </svg>
             <div class="absolute inset-0 flex flex-col items-center justify-center">
-              <span id="fngValue" class="text-2xl font-bold dark:text-gray-200">--</span>
-              <span id="fngClass" class="text-lg dark:text-gray-200">--</span>
+              <span id="fngValue" class="text-2xl font-bold">--</span>
+              <span id="fngClass" class="text-lg">--</span>
             </div>
           </div>
         </div>
@@ -323,38 +277,38 @@
     </div>
     
     <!-- Card สำหรับ Historical Values -->
-    <div id="historicalCard" class="max-w-sm mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden mt-4">
+    <div id="historicalCard" class="max-w-sm mx-auto bg-white shadow-lg rounded-lg overflow-hidden mt-4">
       <div class="p-4">
-        <h2 class="text-xl font-bold text-center mb-4 dark:text-gray-200">Historical Values</h2>
+        <h2 class="text-xl font-bold text-center mb-4">Historical Values</h2>
         <div class="space-y-2">
           <div class="flex justify-between">
-            <span class="font-medium dark:text-gray-200">Yesterday</span>
-            <span id="historicalYesterday" class="font-medium dark:text-gray-200">--</span>
+            <span class="font-medium">Yesterday</span>
+            <span id="historicalYesterday" class="font-medium">--</span>
           </div>
           <div class="flex justify-between">
-            <span class="font-medium dark:text-gray-200">Last Week</span>
-            <span id="historicalLastWeek" class="font-medium dark:text-gray-200">--</span>
+            <span class="font-medium">Last Week</span>
+            <span id="historicalLastWeek" class="font-medium">--</span>
           </div>
           <div class="flex justify-between">
-            <span class="font-medium dark:text-gray-200">Last Month</span>
-            <span id="historicalLastMonth" class="font-medium dark:text-gray-200">--</span>
+            <span class="font-medium">Last Month</span>
+            <span id="historicalLastMonth" class="font-medium">--</span>
           </div>
         </div>
       </div>
     </div>
     
     <!-- Card สำหรับ Yearly High and Low -->
-    <div id="yearlyCard" class="max-w-sm mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden mt-4">
+    <div id="yearlyCard" class="max-w-sm mx-auto bg-white shadow-lg rounded-lg overflow-hidden mt-4">
       <div class="p-4">
-        <h2 class="text-xl font-bold text-center mb-4 dark:text-gray-200">Yearly High and Low</h2>
+        <h2 class="text-xl font-bold text-center mb-4">Yearly High and Low</h2>
         <div class="space-y-2">
           <div class="flex justify-between">
-            <span class="font-medium dark:text-gray-200">Yearly High</span>
-            <span id="yearlyHigh" class="font-medium dark:text-gray-200">--</span>
+            <span class="font-medium">Yearly High</span>
+            <span id="yearlyHigh" class="font-medium">--</span>
           </div>
           <div class="flex justify-between">
-            <span class="font-medium dark:text-gray-200">Yearly Low</span>
-            <span id="yearlyLow" class="font-medium dark:text-gray-200">--</span>
+            <span class="font-medium">Yearly Low</span>
+            <span id="yearlyLow" class="font-medium">--</span>
           </div>
         </div>
       </div>
@@ -362,8 +316,8 @@
 
     <!-- Chart Type Selector -->
     <div class="mt-6 mb-2">
-      <label for="chartTypeSelect" class="font-medium mr-2 dark:text-gray-200">Select Chart Type:</label>
-      <select id="chartTypeSelect" class="px-3 py-2 border rounded dark:bg-gray-800 dark:text-gray-200">
+      <label for="chartTypeSelect" class="font-medium mr-2">Select Chart Type:</label>
+      <select id="chartTypeSelect" class="px-3 py-2 border rounded">
         <option value="line" selected>Line Chart</option>
         <option value="bar">Bar Chart</option>
       </select>
@@ -371,20 +325,21 @@
 
     <!-- Chart Section -->
     <div class="mt-6 h-72">
-      <h3 class="text-xl font-semibold mb-2 dark:text-gray-200">Account Distribution</h3>
-      <canvas id="accountsChart" class="bg-white dark:bg-gray-800 p-4 rounded shadow"></canvas>
+      <h3 class="text-xl font-semibold mb-2">Account Distribution</h3>
+      <canvas id="accountsChart" class="bg-white p-4 rounded shadow"></canvas>
     </div>
 
     <!-- Activity Log -->
+    <br>
     <div class="mt-6">
-      <h3 class="text-xl font-semibold mb-2 dark:text-gray-200">Activity Log</h3>
-      <ul id="activityLog" class="list-disc pl-5 text-sm text-gray-700 dark:text-gray-300 max-h-48 overflow-y-auto border p-3 rounded bg-white dark:bg-gray-800"></ul>
+      <h3 class="text-xl font-semibold mb-2">Activity Log</h3>
+      <ul id="activityLog" class="list-disc pl-5 text-sm text-gray-700 max-h-48 overflow-y-auto border p-3 rounded bg-white"></ul>
     </div>
   </main>
   <!-- ================== /CONTENT Portfolio ================== -->
 
   <!-- ================== TRADINGVIEW OVERLAY ================== -->
-  <div id="tradingviewOverlay" class="fixed left-0 right-0 bottom-0 top-[4rem] z-40 bg-white dark:bg-gray-800 hidden">
+  <div id="tradingviewOverlay" class="fixed left-0 right-0 bottom-0 top-[4rem] z-40 bg-white hidden">
     <div class="w-full h-full">
       <div id="chart"></div>
       <div class="text-center py-2">
@@ -398,16 +353,12 @@
    
   <!-- Confirmation Modal สำหรับลบ -->
   <div id="confirmModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 hidden">
-    <div class="bg-white dark:bg-gray-800 rounded shadow p-6 w-80">
-      <h2 class="text-xl font-bold mb-4 dark:text-gray-200">Confirm Delete</h2>
-      <p class="mb-4 dark:text-gray-300">Are you sure you want to delete this account?</p>
+    <div class="bg-white rounded shadow p-6 w-80">
+      <h2 class="text-xl font-bold mb-4">Confirm Delete</h2>
+      <p class="mb-4">Are you sure you want to delete this account?</p>
       <div class="flex justify-end gap-2">
-        <button id="cancelBtn" class="px-3 py-2 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 rounded">
-          Cancel
-        </button>
-        <button id="confirmBtn" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded">
-          Delete
-        </button>
+        <button id="cancelBtn" class="px-3 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+        <button id="confirmBtn" class="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
       </div>
     </div>
   </div>
@@ -417,7 +368,7 @@
 
   <!-- Loading Indicator -->
   <div id="loadingOverlay" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30 z-50 hidden">
-    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200"></div>
+    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
   </div>
 
   <!-- ================== SCRIPT (Portfolio + ฟังก์ชัน) ================== -->
@@ -440,7 +391,7 @@
     const filledStarIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.049 9.397c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/></svg>`;
     const outlinedStarIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.286 3.97c.3.921-.755 1.688-1.54 1.118l-3.38-2.455a1 1 0 00-1.175 0l-3.38 2.455c-.784.57-1.838-.197-1.539-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.049 9.397c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/></svg>`;
     
-    /* defaultGroups, defaultSubgroups และ initGroupSubgroupSelects() */
+    /* >>> (NEW) defaultGroups, defaultSubgroups และ initGroupSubgroupSelects() << */
     const defaultGroups = ["Bank", "Crypto", "Stock", "Game", "Asset"];
     const defaultSubgroups = ["Gaming & Tech Devices", "Collectibles", "Watch"];
     
@@ -526,12 +477,15 @@
           Gold Price (1 oz): 
           ${data.goldPricePerOzUSD.toLocaleString()} USD, 
           ${data.goldPricePerOzTHB.toLocaleString()} THB<br>
+    
           Gold Price (1 Baht): 
           ${data.goldPricePerBahtUSD.toLocaleString()} USD, 
           ${data.goldPricePerBahtTHB.toLocaleString()} THB<br>
+    
           (Last update: ${dateFormatted} from ${data.source})
         `;
-        document.getElementById('goldPriceDisplay').innerHTML = msg;
+        const goldElem = document.getElementById('goldPriceDisplay');
+        goldElem.innerHTML = msg;
       } catch (error) {
         console.error('Error fetching gold price:', error);
         document.getElementById('goldPriceDisplay').textContent = 'Gold Price: Error';
@@ -795,7 +749,7 @@
       document.getElementById('totalExcludedUSD').textContent =
         totalUSDExcluded.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
     
-      // Profit / Loss Overview (All Groups)
+      // NEW: Profit / Loss Overview (All Groups)
       let totalCostTHB = 0;
       accounts.forEach(acc => {
         const cost = parseFloat(acc.cost) || 0;
@@ -830,7 +784,7 @@
         profitLossElem.classList.add('text-red-500');
       }
     
-      // Profit / Loss Excluded Groups
+      // NEW: Profit / Loss Excluded Groups (คำนวณเฉพาะบัญชีที่ไม่ถูก Exclude)
       let totalCostExcludedTHB = 0;
       let totalAmountExcludedTHB = 0;
       accounts.forEach(acc => {
@@ -901,7 +855,7 @@
     
       for (const groupName in groups) {
         html += `
-          <tr class="bg-gray-100 dark:bg-gray-700 font-bold text-gray-700 dark:text-gray-200 text-sm">
+          <tr class="bg-gray-100 font-bold text-gray-700 text-sm">
             <td colspan="4" class="px-4 py-2 uppercase">
               ${groupName}
             </td>
@@ -911,7 +865,7 @@
         for (const subGroupName in subgroupsObj) {
           if (subGroupName.trim() !== "") {
             html += `
-              <tr class="bg-gray-50 dark:bg-gray-800 italic text-gray-600 dark:text-gray-300 text-sm">
+              <tr class="bg-gray-50 italic text-gray-600 text-sm">
                 <td colspan="4" class="px-4 py-2 pl-8">
                   - ${subGroupName}
                 </td>
@@ -928,19 +882,19 @@
               if (profitLoss > 0) {
                 profitLossFormatted = '+' + profitLossFormatted;
               }
-              amountStr += ` <span class="text-xs text-gray-400 dark:text-gray-500">(${costFormatted} ${account.currency})</span>`;
+              amountStr += ` <span class="text-xs text-gray-400">(${costFormatted} ${account.currency})</span>`;
               amountStr += `<br><span class="text-xs ${profitLossClass}">(${profitLossFormatted} ${account.currency})</span>`;
             }
     
             const convertedText = (account.currency !== mainCurrency)
-              ? `<br/><span class="text-sm text-gray-600 dark:text-gray-400">
+              ? `<br/><span class="text-sm text-gray-600">
                    ≈ ${convertToMain(account.amount, account.currency)
                       .toLocaleString(undefined, { style: 'currency', currency: mainCurrency })}
                  </span>`
               : "";
     
             html += `
-              <tr class="border-b hover:bg-gray-50 dark:hover:bg-gray-700">
+              <tr class="border-b hover:bg-gray-50">
                 <td class="px-4 py-2">
                   ${account.name}
                 </td>
@@ -949,15 +903,11 @@
                   ${convertedText}
                 </td>
                 <td class="px-4 py-2">${account.currency}</td>
-                <td class="px-4 py-2 space-x-2">
+                <td class="px-4 py-2">
                   <button type="button" onclick="editAccount('${account.id}')" 
-                    class="px-2 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded">
-                    Edit
-                  </button>
+                    class="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">Edit</button>
                   <button type="button" onclick="confirmDelete('${account.id}')" 
-                    class="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded">
-                    Delete
-                  </button>
+                    class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 ml-2">Delete</button>
                 </td>
               </tr>
             `;
@@ -1183,16 +1133,16 @@
           const starIcon = isFav ? filledStarIcon : outlinedStarIcon;
           
           html += `
-          <div class="w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 relative flex-shrink-0 transform transition duration-300 hover:scale-105 snap-start">
+          <div class="w-48 bg-white rounded-xl shadow-lg p-4 relative flex-shrink-0 transform transition duration-300 hover:scale-105 snap-start">
             <button class="absolute top-2 right-2 focus:outline-none" onclick="toggleFavorite('${coin.symbol}')">
               ${starIcon}
             </button>
             <div class="block">
-              <img class="w-16 h-16 mx-auto mb-2 rounded-full border border-gray-200 dark:border-gray-700" src="https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png" alt="${coin.name} Logo" loading="lazy">
+              <img class="w-16 h-16 mx-auto mb-2 rounded-full border border-gray-200" src="https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.id}.png" alt="${coin.name} Logo" loading="lazy">
               <div class="text-center">
-                <span class="block font-bold text-lg text-gray-800 dark:text-gray-200">${coin.name}</span>
-                <span class="block text-sm text-gray-500 dark:text-gray-400">${coin.symbol}</span>
-                <span class="block text-sm text-gray-500 dark:text-gray-400">${priceFormatted}</span>
+                <span class="block font-bold text-lg text-gray-800">${coin.name}</span>
+                <span class="block text-sm text-gray-500">${coin.symbol}</span>
+                <span class="block text-sm text-gray-500">${priceFormatted}</span>
                 <span class="block text-sm font-medium" style="color: ${changeColor};">
                   ${changeIcon} ${percentFormatted}
                 </span>
@@ -1225,10 +1175,10 @@
         loadCoinSlider();
       });
       
-      // เรียก initGroupSubgroupSelects() เมื่อ DOM Ready
+      // (NEW) เรียก initGroupSubgroupSelects() เมื่อ DOM Ready
       initGroupSubgroupSelects();
     
-      // ฟอร์มเพิ่มบัญชี
+      // (แก้ส่วน submit) ใช้ค่าจาก select/manual สำหรับ Group/Subgroup และอ่านค่า cost
       document.getElementById('accountForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const groupSelect = document.getElementById('accountGroupSelect');
@@ -1252,7 +1202,7 @@
           id: editingId || Date.now().toString(),
           name: document.getElementById('accountName').value,
           amount: document.getElementById('accountAmount').value,
-          cost: costVal,
+          cost: costVal, // เพิ่ม field ต้นทุน
           currency: document.getElementById('accountCurrency').value,
           group: finalGroup,
           subgroup: finalSubgroup,
@@ -1495,14 +1445,12 @@
       await autoLoadDataFromServer();
     });
   </script>
-  
-  <!-- TradingView Widget Script -->
   <script>
-    // จำค่า symbol/interval ใน localStorage
+    // (1) จำค่า symbol/interval ใน localStorage
     const savedSymbol   = localStorage.getItem('tvSymbol')   || "BINANCE:BTCUSDT";
     const savedInterval = localStorage.getItem('tvInterval') || "240";
     
-    // สร้าง widget ตอนโหลดหน้า
+    // (2) สร้าง widget ตอนโหลดหน้า
     window.addEventListener('load', function() {
       const tvWidget = new TradingView.widget({
         "autosize": true,
@@ -1543,34 +1491,6 @@
             localStorage.setItem('tvInterval', newInterval);
           });
         });
-      }
-    });
-  </script>
-  
-  <!-- Dark Mode Toggle Script -->
-  <script>
-    const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
-    const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
-    const themeToggleBtn = document.getElementById('theme-toggle');
-
-    if (document.documentElement.classList.contains('dark')) {
-      themeToggleLightIcon.classList.remove('hidden');
-      themeToggleDarkIcon.classList.add('hidden');
-    } else {
-      themeToggleDarkIcon.classList.remove('hidden');
-      themeToggleLightIcon.classList.add('hidden');
-    }
-
-    themeToggleBtn.addEventListener('click', function () {
-      themeToggleDarkIcon.classList.toggle('hidden');
-      themeToggleLightIcon.classList.toggle('hidden');
-
-      if (document.documentElement.classList.contains('dark')) {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('color-theme', 'light');
-      } else {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('color-theme', 'dark');
       }
     });
   </script>
