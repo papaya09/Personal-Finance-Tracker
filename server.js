@@ -46,11 +46,16 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.serializeUser((user, done) => {
-  console.log('Serializing user:', user.id || user.displayName);
+  const userId = user.id || user.sub;
+  const userName = user.displayName || user.name;
+  console.log('Serializing user:', userId || userName);
   done(null, user);
 });
+
 passport.deserializeUser((user, done) => {
-  console.log('Deserializing user:', user.id || user.displayName);
+  const userId = user.id || user.sub;
+  const userName = user.displayName || user.name;
+  console.log('Deserializing user:', userId || userName);
   done(null, user);
 });
 
@@ -399,6 +404,53 @@ app.get('/goldprice', async (req, res) => {
     console.error('Error fetching gold price:', error);
     return res.status(500).json({ error: 'Failed to fetch gold price.' });
   }
+});
+
+// ===== เพิ่มส่วนสำหรับรองรับ Google OAuth ผ่าน token จาก iOS =====
+// ===== เพิ่มส่วนสำหรับรองรับ Google OAuth ผ่าน token จาก iOS =====
+const GoogleTokenStrategy = require('passport-google-id-token');
+
+// กำหนด Strategy สำหรับ iOS โดยใช้ clientID ที่กำหนดไว้ใน .env
+passport.use('google-token', new GoogleTokenStrategy({
+    clientID: process.env.GOOGLE_IOS_CLIENT_ID,
+  },
+  (parsedToken, googleId, done) => {
+    console.log('Google token strategy callback invoked for iOS.');
+    console.log('Parsed token payload:', parsedToken.payload);
+    // หากต้องการสามารถตรวจสอบหรืออัปเดตข้อมูลผู้ใช้ใน database ได้ที่นี่
+    return done(null, parsedToken.payload);
+  }
+));
+
+// เปลี่ยน endpoint สำหรับ iOS ให้ใช้ Passport authentication
+app.post('/auth/google/token', (req, res, next) => {
+  // หากมีผู้ใช้แล้ว ให้ส่งกลับเลย
+  if (req.user) {
+    return res.json({ message: 'Already logged in', user: req.user });
+  }
+  // ตรวจสอบว่ามี idToken ใน body หรือไม่
+  if (!req.body.idToken) {
+    console.error('No ID token provided in request body.');
+    return res.status(400).json({ error: 'No ID token provided' });
+  }
+  passport.authenticate('google-token', { session: true }, (err, user, info) => {
+    if (err) {
+      console.error('Error in token auth:', err);
+      return res.status(500).json({ error: err.message });
+    }
+    if (!user) {
+      console.error('No user found. Info:', info);
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        console.error('Error logging in user:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      console.log('iOS authentication successful.');
+      return res.json({ message: 'Login successful', user: req.user });
+    });
+  })(req, res, next);
 });
 
 
