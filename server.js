@@ -136,7 +136,8 @@ app.post('/save', async (req, res) => {
   if (!devmode && !req.user) {
     return res.status(401).json({ error: 'User not authenticated' });
   }
-  const googleId = req.user ? req.user.id : 'devUser';
+  const googleId = req.user && (req.user.sub || req.user.id) ? (req.user.sub || req.user.id) : 'devUser';
+  const filter = { googleId: googleId };
   const accountsData = req.body.accounts;
   try {
     const client = await getClient();
@@ -158,7 +159,8 @@ app.get('/load', async (req, res) => {
   if (!devmode && !req.user) {
     return res.status(401).json({ error: 'User not authenticated' });
   }
-  const googleId = req.user ? req.user.id : 'devUser';
+  const googleId = req.user && (req.user.sub || req.user.id) ? (req.user.sub || req.user.id) : 'devUser';
+
   try {
     const client = await getClient();
     const db = client.db("finance");
@@ -454,6 +456,28 @@ app.post('/auth/google/token', (req, res, next) => {
 });
 
 
+// Endpoint สำหรับดึงค่าอัตราแลกเปลี่ยน USD to THB
+app.get('/exchange-rate', async (req, res) => {
+  try {
+    const response = await fetch("https://open.er-api.com/v6/latest/THB");
+    const data = await response.json();
+    if (data.result === "success") {
+      const rateUSD = parseFloat(data.rates["USD"]);
+      if (rateUSD && rateUSD !== 0) {
+        // คำนวณว่า 1 USD เท่ากับกี่ THB
+        const usdToThb = (1 / rateUSD).toFixed(2);
+        return res.json({ usdToThb: parseFloat(usdToThb) });
+      } else {
+        return res.status(500).json({ error: "Invalid rate" });
+      }
+    } else {
+      return res.status(500).json({ error: "Exchange rate API error" });
+    }
+  } catch (error) {
+    console.error("Error fetching exchange rate:", error);
+    res.status(500).json({ error: "Failed to fetch exchange rate" });
+  }
+});
 
 
 
