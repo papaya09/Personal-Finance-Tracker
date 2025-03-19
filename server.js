@@ -132,20 +132,33 @@ async function updateFngLatestData() {
 // ------------------------
 // API Endpoints สำหรับ save/load โดยใช้ MongoDB
 // ------------------------
+// Endpoint /save
 app.post('/save', async (req, res) => {
   if (!devmode && !req.user) {
     return res.status(401).json({ error: 'User not authenticated' });
   }
   const googleId = req.user && (req.user.sub || req.user.id) ? (req.user.sub || req.user.id) : 'devUser';
-  const filter = { googleId: googleId };
-  const accountsData = req.body.accounts;
+  
+  // รับค่าจาก body (ซึ่งจะมี accounts และ manualBreakdowns)
+  const accountsData = req.body.accounts || [];
+  const manualBreakdowns = req.body.manualBreakdowns || {};
+
   try {
     const client = await getClient();
     const db = client.db("finance");
     const collection = db.collection("accounts");
+
     const filter = { googleId: googleId };
-    const update = { $set: { accounts: accountsData, updatedAt: new Date() } };
+    // เก็บ accounts และ manualBreakdowns ใน document เดียวกัน
+    const update = {
+      $set: {
+        accounts: accountsData,
+        manualBreakdowns: manualBreakdowns,
+        updatedAt: new Date()
+      }
+    };
     const options = { upsert: true };
+
     await collection.updateOne(filter, update, options);
     console.log(`Data saved for user ${googleId}`);
     res.json({ message: 'Data saved successfully.' });
@@ -155,6 +168,7 @@ app.post('/save', async (req, res) => {
   }
 });
 
+// Endpoint /load
 app.get('/load', async (req, res) => {
   if (!devmode && !req.user) {
     return res.status(401).json({ error: 'User not authenticated' });
@@ -165,11 +179,20 @@ app.get('/load', async (req, res) => {
     const client = await getClient();
     const db = client.db("finance");
     const collection = db.collection("accounts");
+
     const doc = await collection.findOne({ googleId: googleId });
     if (doc) {
-      res.json({ accounts: doc.accounts });
+      // ถ้ามี document => ส่ง accounts + manualBreakdowns กลับ
+      res.json({
+        accounts: doc.accounts || [],
+        manualBreakdowns: doc.manualBreakdowns || {}
+      });
     } else {
-      res.json({ accounts: [] });
+      // ไม่เจอ => ส่ง empty
+      res.json({
+        accounts: [],
+        manualBreakdowns: {}
+      });
     }
   } catch (err) {
     console.error("Error loading from DB:", err);
