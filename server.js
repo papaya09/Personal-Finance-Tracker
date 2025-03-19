@@ -1,5 +1,6 @@
 // server.js
 require('dotenv').config(); // โหลด environment variables จาก .env
+const { setupSolPriceUpdate, solPrice, getCurrentSolPrice } = require('./api/fetchsolprice.js');
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -499,6 +500,23 @@ app.get('/exchange-rate', async (req, res) => {
   } catch (error) {
     console.error("Error fetching exchange rate:", error);
     res.status(500).json({ error: "Failed to fetch exchange rate" });
+  }
+});
+
+// เรียกใช้ฟังก์ชันเพื่ออัปเดตราคา SOL อัตโนมัติ
+setupSolPriceUpdate();
+
+// เพิ่ม API Endpoint สำหรับดึงราคาปัจจุบันของ SOL
+app.get('/solprice', async (req, res) => {
+  try {
+    // ดึงราคาล่าสุดของ SOL
+    const currentPrice = await getCurrentSolPrice();
+    
+    // ตอบกลับข้อมูลราคาของ SOL
+    res.json({ solPrice: currentPrice });
+  } catch (error) {
+    console.error("Error fetching SOL price:", error);
+    res.status(500).json({ error: 'Failed to fetch SOL price.' });
   }
 });
 
