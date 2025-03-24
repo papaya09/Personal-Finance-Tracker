@@ -206,10 +206,10 @@ app.get('/load', async (req, res) => {
 // ------------------------
 app.get('/cmc/listings', async (req, res) => {
   try {
-    const oneHour = 3600000; // 1 ชั่วโมง = 3600000 มิลลิวินาที
+    const time = 600000; // 1 ชั่วโมง = 3600000 มิลลิวินาที | 600000 = 10 min
     const now = Date.now();
     // ถ้ามี cache และเวลาที่ผ่านไปยังไม่เกิน 1 ชั่วโมง
-    if (cachedListings && (now - lastListingsCall < oneHour)) {
+    if (cachedListings && (now - lastListingsCall < time)) {
       console.log("Returning cached coin listings.");
       return res.json(cachedListings);
     }
